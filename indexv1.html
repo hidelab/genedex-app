@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Genedex</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -24,41 +23,7 @@
   ::-webkit-scrollbar-track{background:transparent}
   input,textarea,button,select{font-family:inherit}
   textarea{resize:vertical}
-  .gdx-hero-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,.78fr);gap:28px;align-items:start}
-  .gdx-hero-pad{padding:36px 32px 48px}
-  .gdx-home-banner-wrap{background:#f3f6fa;border-bottom:1px solid #e6e9ed}
-  .gdx-home-banner{display:block;width:100%;max-width:1200px;height:auto;margin:0 auto}
-  .gdx-hero-title{font-size:17px;font-weight:600;letter-spacing:-.01em;line-height:1.45;margin:0;color:#1b2129}
-  .gdx-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-  .gdx-search{position:relative;background:#fff;border:1px solid #e6e9ed;border-radius:16px;box-shadow:0 10px 28px -16px rgba(27,33,41,.28)}
-  .gdx-search:focus-within{border-color:#0d9488;box-shadow:0 0 0 3px rgba(13,148,136,.16),0 10px 28px -16px rgba(27,33,41,.28)}
-  .gdx-search-icon{position:absolute;top:16px;left:16px;color:#8b95a3;pointer-events:none}
-  .gdx-hero-input{display:block;width:100%;min-height:132px;padding:14px 44px 56px 44px;border:none;border-radius:16px;font-size:14.5px;font-family:'IBM Plex Mono',monospace;line-height:1.55;color:#1b2129;background:transparent;resize:vertical;box-shadow:none}
-  .gdx-hero-input:focus{outline:none;border:none;box-shadow:none}
-  .gdx-search-btn{position:absolute;right:12px;bottom:12px;border:none;background:#0d9488;color:#fff;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer}
-  .gdx-search-btn:hover:not(:disabled){background:#0b7d72}
-  .gdx-search-btn:disabled{opacity:.45;cursor:not-allowed}
-  .gdx-search-clear{position:absolute;top:10px;right:10px;width:28px;height:28px;border:none;background:transparent;color:#8b95a3;border-radius:8px;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center}
-  .gdx-search-clear:hover{background:#f1f4f7;color:#1b2129}
-  .gdx-search-btn:focus-visible,.gdx-search-clear:focus-visible,.gdx-hero-chip:focus-visible{outline:2px solid #0d9488;outline-offset:2px}
-  .gdx-hero-chip{border:1px solid #9fd4cc;background:#e4f3f1;color:#0b7d72;padding:7px 13px;font-size:12.5px;border-radius:999px;font-weight:600;cursor:pointer}
-  .gdx-hero-chip:hover{background:#d3ebe8}
-  .gdx-hero-card{background:#fff;border:1px solid #e6e9ed;border-radius:16px;padding:18px 18px 16px}
-  .gdx-mod-card:hover{border-color:#9fd4cc;box-shadow:0 10px 24px -14px rgba(13,148,136,.45)}
-  .gdx-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:28px}
-  .gdx-metric{background:#fafbfc;border:1px solid #eef1f4;border-radius:12px;padding:12px 12px 11px}
-  .gdx-metric-val{font-size:15px;font-weight:600;color:#1b2129;letter-spacing:-.02em;font-family:'IBM Plex Mono',monospace}
-  .gdx-metric-lab{font-size:11px;color:#8b95a3;margin-top:3px;line-height:1.3}
-  @media (max-width:840px){
-    .gdx-hero-grid{grid-template-columns:1fr;gap:18px}
-    .gdx-hero-pad{padding:32px 18px 36px}
-    .gdx-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
-  }
 </style>
-<script>
-  // Static JSON today. Later: window.GENEDEX_CONFIG = { mode: "api", apiBase: "https://…" };
-  window.GENEDEX_CONFIG = window.GENEDEX_CONFIG || { mode: "static" };
-</script>
 <script src="genedex-data.js"></script>
 </helmet>
 <div style="height:100vh;width:100vw;overflow:hidden;background:#f4f6f8;color:#1b2129">
@@ -138,22 +103,23 @@ class Component extends DCLogic {
     const { useState, useMemo, useCallback } = React;
     const C = this.C, G = window.Genedex;
 
-    const [tab, setTab] = useState("home");
+    const [tab, setTab] = useState("workbench");
     const [wbTab, setWbTab] = useState("search");
     const [sessionLists, setSessionLists] = useState([]);
     const [legendOpen, setLegendOpen] = useState(false);
+    const [aiOpen, setAiOpen] = useState(false);
     const [devMode, setDevMode] = useState(() => { try { return localStorage.getItem("gdx_dev") === "1" || /dev/.test(location.hash); } catch (e) { return false; } });
     const [devOpen, setDevOpen] = useState(false);
     React.useEffect(() => { const onKey = (e) => { if (e.altKey && e.shiftKey && (e.key === "D" || e.key === "d")) { setDevMode(m => { const n = !m; try { localStorage.setItem("gdx_dev", n ? "1" : "0"); } catch (_) {} return n; }); setDevOpen(true); } }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, []);
 
     // ---- shared workbench state ----
     const DEFAULT = "APOE\nAPP\nMAPT\nTREM2\nBIN1\nCLU\nPSEN1\nGFAP\nAQP4\nC1QA\nCX3CR1\nSNAP25\nBDNF\nNLRP3\nSPP1\nSORL1\nPICALM\nABCA7";
-    const [searchInput, setSearchInput] = useState("");
+    const [searchInput, setSearchInput] = useState(DEFAULT);
     const [searchRes, setSearchRes] = useState(null);
     const [searchOpts, setSearchOpts] = useState({ dir: "All", fdr: 0.05, facet: "", sort: "fdr" });
-    const [fpInput, setFpInput] = useState("");
+    const [fpInput, setFpInput] = useState(DEFAULT);
     const [fpRes, setFpRes] = useState(null);
-    const [fpOpts, setFpOpts] = useState({ dir: "All", mode: "count", unit: "study", tissues: [], types: [], contrasts: [], facetClass: "both", showSig: false, cellTypes: [], funcFacets: [], tissueFacets: [], restrictFf: [], restrictCf: [], rowOrder: "breadth", cluster: false });
+    const [fpOpts, setFpOpts] = useState({ dir: "All", mode: "count", unit: "study", tissues: [], types: [], contrasts: [], facetClass: "both", cellTypes: [], funcFacets: [], tissueFacets: [], restrictFf: [], restrictCf: [], rowOrder: "breadth", cluster: false });
     const [ctOpts, setCtOpts] = useState({ minCooccurrence: 1, nPermutations: 1000, fdrAlpha: 0.05, facetTypes: { ff: true, cf: true }, minFacetOccurrence: 1 });
     const [ctInput, setCtInput] = useState("APOE");
     const [ctRes, setCtRes] = useState(null);
@@ -167,46 +133,19 @@ class Component extends DCLogic {
     const [gmProgress, setGmProgress] = useState(null);
     const [gmError, setGmError] = useState(null);
 
-    const searchSeq = React.useRef(0);
-    const fpSeq = React.useRef(0);
-    const searchOptsRef = React.useRef(searchOpts);
-    const fpOptsRef = React.useRef(fpOpts);
-    searchOptsRef.current = searchOpts;
-    fpOptsRef.current = fpOpts;
-
-    const runSearch = useCallback(async (text, opts) => {
-      const seq = ++searchSeq.current;
+    const runSearch = useCallback((text, opts) => {
       const genes = G.compute.norm((text || "").split(/[\s,;]+/));
-      if (!genes.length) {
-        if (seq === searchSeq.current) setSearchRes(null);
-        return;
-      }
-      const res = await G.query.enrich(genes, { dir: (opts || searchOptsRef.current).dir });
-      if (seq === searchSeq.current) setSearchRes(res);
+      const res = G.compute.enrich(genes, { dir: opts.dir });
+      setSearchRes(res);
     }, []);
-    const runFingerprint = useCallback(async (text, opts) => {
-      const seq = ++fpSeq.current;
+    const runFingerprint = useCallback((text, opts) => {
       const genes = G.compute.norm((text || "").split(/[\s,;]+/));
-      const o = opts || fpOptsRef.current;
-      if (!genes.length) {
-        if (seq === fpSeq.current) setFpRes(null);
-        return;
-      }
-      const res = await G.query.fingerprint(genes, { dir: o.dir, unit: o.unit, tissues: o.tissues, types: o.types, contrasts: o.contrasts, restrictFf: o.restrictFf, restrictCf: o.restrictCf });
-      if (seq === fpSeq.current) setFpRes(res);
+      setFpRes(G.compute.fingerprint(genes, { dir: opts.dir, unit: opts.unit, tissues: opts.tissues, types: opts.types, contrasts: opts.contrasts, restrictFf: opts.restrictFf, restrictCf: opts.restrictCf }));
     }, []);
-    React.useEffect(() => {
-      const t = setTimeout(() => runSearch(searchInput, searchOptsRef.current), 220);
-      return () => clearTimeout(t);
-    }, [searchInput, searchOpts.dir, runSearch]);
-    React.useEffect(() => {
-      const t = setTimeout(() => runFingerprint(fpInput, fpOptsRef.current), 220);
-      return () => clearTimeout(t);
-    }, [fpInput, runFingerprint]);
     const runCotravel = useCallback(async (gene, opts) => {
       setCtBusy(true); setCtError(null); setCtProgress({ phase: "starting", frac: 0 });
       try {
-        const res = await G.query.cotravelTest(gene, opts, p => setCtProgress(p));
+        const res = await G.compute.cotravelTest(gene, opts, p => setCtProgress(p));
         setCtRes(res);
       } catch (e) {
         setCtError(e.message || String(e)); setCtRes(null);
@@ -220,7 +159,7 @@ class Component extends DCLogic {
       setGmBusy(true); setGmError(null); setGmProgress({ phase: "starting", frac: 0 });
       try {
         const o = { ...opts, nPermutations: opts.testSignificance ? (opts.nPermutations || 200) : 0 };
-        setGmRes(await G.query.geneModules(genes, o, pr => setGmProgress(pr)));
+        setGmRes(await G.compute.geneModules(genes, o, pr => setGmProgress(pr)));
       } catch (e) {
         setGmError(e.message || String(e)); setGmRes(null);
       } finally {
@@ -228,213 +167,64 @@ class Component extends DCLogic {
       }
     }, []);
 
-    const loadExample = (which) => {
-      if (which === "fingerprint") { setFpInput(DEFAULT); runFingerprint(DEFAULT, fpOpts); }
-      else { setSearchInput(DEFAULT); runSearch(DEFAULT, searchOpts); }
-    };
+    // run defaults once
+    React.useEffect(() => { runSearch(DEFAULT, searchOpts); runFingerprint(DEFAULT, fpOpts); }, []);
 
-    const analyzeFromHome = async (text) => {
-      const genes = G.compute.norm(String(text || "").split(/[\s,;]+/));
-      if (!genes.length) return [];
-      const asLines = genes.join("\n");
-      setSearchInput(asLines);
-      setFpInput(asLines);
-      await runSearch(asLines, searchOpts);
-      await runFingerprint(asLines, fpOpts);
-      setTab("workbench");
-      setWbTab("search");
-      return genes;
-    };
-
-    const pushToFingerprint = async (genes) => { setFpInput(genes.join("\n")); setFpRes(await G.query.fingerprint(genes, { dir: fpOpts.dir, unit: fpOpts.unit, tissues: fpOpts.tissues, types: fpOpts.types, contrasts: fpOpts.contrasts, restrictFf: fpOpts.restrictFf, restrictCf: fpOpts.restrictCf })); setTab("workbench"); setWbTab("fingerprint"); };
+    const pushToFingerprint = (genes) => { setFpInput(genes.join("\n")); setFpRes(G.compute.fingerprint(genes, { dir: fpOpts.dir, unit: fpOpts.unit, tissues: fpOpts.tissues, types: fpOpts.types, contrasts: fpOpts.contrasts, restrictFf: fpOpts.restrictFf, restrictCf: fpOpts.restrictCf })); setTab("workbench"); setWbTab("fingerprint"); };
     const pushToCotravel = (genes) => { if (!genes || !genes.length) return; const q = genes.join(", "); setCtInput(q); runCotravel(q, ctOpts); setTab("workbench"); setWbTab("cotravel"); };
     const pushToModules = (genes) => { if (!genes || !genes.length) return; const q = genes.join(", "); setGmInput(q); runModules(q, gmOpts); setTab("workbench"); setWbTab("modules"); };
     const saveList = (name, genes) => setSessionLists(l => [...l.filter(x => x.name.toLowerCase() !== name.toLowerCase()), { name, genes }]);
 
+    // assistant context summary
+    const aiContext = useMemo(() => {
+      let c = "Active tab: " + tab + ".";
+      if (tab === "workbench") {
+        c += " Workbench view: " + wbTab + ".";
+        if (wbTab === "search" && searchRes) {
+          const sig = searchRes.rows.filter(r => r.fdr < 0.05).length;
+          c += " Gene search: " + searchRes.nInput + " input genes vs " + G.lists.length + " curated lists; " + searchRes.rows.length + " lists have overlap, " + sig + " significant at FDR<0.05. Top hits: " + searchRes.rows.slice(0, 6).map(r => r.name + " (overlap " + r.nOverlap + ", FDR " + r.fdr.toExponential(1) + ", facets: " + [...r.ff, ...r.cf].join("/") + ")").join("; ") + ".";
+        }
+        if (wbTab === "fingerprint" && fpRes) {
+          c += " Fingerprint of " + fpRes.rows.length + " genes across " + fpRes.ffCols.length + " functional + " + fpRes.cfCols.length + " cellular + " + (fpRes.tfCols || []).length + " tissue facets. Broadest genes: " + fpRes.rows.slice(0, 6).map(r => r.gene + " (breadth " + r.breadth + ")").join(", ") + ".";
+        }
+        if (wbTab === "modules" && gmRes) {
+          c += " Gene modules for " + gmRes.gene + ": " + gmRes.nNodes + " co-occurring genes clustered into " + gmRes.modules.length + " modules (Louvain on a kNN Jaccard graph, modularity Q=" + gmRes.modularity.toFixed(3) + "). " + (gmRes.perm ? "Module tightness tested against a degree-preserving curveball null over " + gmRes.perm.nPermutations + " permutations; " + gmRes.perm.nSignificant + " of " + gmRes.modules.length + " modules pass BH q<=" + gmRes.perm.fdrAlpha + ". " : "No significance test was run \u2014 cohesion and Q are descriptive only. ") + gmRes.modules.slice(0, 5).map(m => "Module " + m.id + " (" + m.size + " genes, cohesion " + m.cohesion.toFixed(3) + (m.p != null ? ", p=" + m.p.toFixed(4) + ", q=" + m.q.toFixed(4) : "") + "): " + m.members.slice(0, 8).map(x => x.gene).join(", ") + "; facets " + m.ff.concat(m.cf).slice(0, 3).map(f => f.facet).join(", ")).join(" | ") + ".";
+        }
+        if (wbTab === "cotravel" && ctRes) {
+          c += " Co-travel test for " + ctRes.gene + " (present in " + ctRes.queryDegree + "/" + ctRes.nLists + " curated lists): " + ctRes.nGenesTested + " genes tested against a degree-preserving null (curveball, " + ctRes.nPermutations + " permutations), " + ctRes.nSignificant + " significant co-travellers at FDR<" + ctRes.fdrAlpha + ". Top hits: " + ctRes.rows.slice(0, 6).map(r => r.gene + " (obs " + r.observed + " vs expected " + r.expected.toFixed(1) + ", q=" + r.qValue.toExponential(1) + ")").join("; ") + ".";
+        }
+      }
+      return c;
+    }, [tab, wbTab, searchRes, fpRes, ctRes, ctOpts, gmRes]);
 
+    const suggestion = (() => {
+      if (tab === "workbench" && wbTab === "search") return "Interpret my enrichment results \u2014 which facets are most significant?";
+      if (tab === "workbench" && wbTab === "fingerprint") return "Which of my genes are most pleiotropic across facets, and what does that imply?";
+      if (tab === "workbench" && wbTab === "cotravel") return "Why does the null model need to preserve gene degree, not just list size?";
+      if (tab === "workbench" && wbTab === "modules") return "What distinguishes these modules biologically, and is the modularity high enough to trust them?";
+      if (tab === "network") return "Which facet pairs share the most genes and why might that be?";
+      if (tab === "similarity") return "Which gene lists are most correlated with my anchor list, and what unifies them?";
+      return "What is Genedex and how should I use it?";
+    })();
 
     const shared = { C, G, h, tab, setTab, wbTab, setWbTab, sessionLists, saveList,
       searchInput, setSearchInput, searchRes, setSearchRes, searchOpts, setSearchOpts, runSearch,
       fpInput, setFpInput, fpRes, fpOpts, setFpOpts, runFingerprint,
       ctInput, setCtInput, ctRes, ctOpts, setCtOpts, runCotravel, ctBusy, ctProgress, ctError,
       gmInput, setGmInput, gmRes, gmOpts, setGmOpts, runModules, gmBusy, gmProgress, gmError,
-      pushToFingerprint, pushToCotravel, pushToModules, setLegendOpen, exampleGenes: DEFAULT, loadExample, analyzeFromHome };
+      pushToFingerprint, pushToCotravel, pushToModules, setLegendOpen };
 
     return h("div", { style: { height: "100vh", display: "flex", flexDirection: "column", background: C.canvas } },
-      h(this.NavBar, { key: "nav-" + tab, ...shared, legendOpen, setLegendOpen, devMode, setDevOpen }),
+      h(this.NavBar, { key: "nav-" + tab, ...shared, legendOpen, setLegendOpen, aiOpen, setAiOpen, devMode, setDevOpen }),
       h("div", { style: { flex: 1, minHeight: 0, position: "relative" } },
         tab === "network" ? h(this.NetworkModule, { key: "network", ...shared })
-          : tab === "docs" ? h(this.DocsModule, { key: "docs", ...shared })
-          : tab === "about" ? h(this.AboutModule, { key: "about", ...shared })
-          : tab === "download" ? h(this.DownloadModule, { key: "download", ...shared })
-          : tab === "home" ? h(this.HomeModule, { key: "home", ...shared })
+          : tab === "similarity" ? h(this.SimilarityModule, { key: "similarity", ...shared })
           : h(this.Workbench, { key: "workbench", ...shared }),
       ),
       legendOpen && h(this.Legend, { C, G, h, onClose: () => setLegendOpen(false) }),
       devOpen && h(this.DevPanel, { C, h, onClose: () => setDevOpen(false) }),
+      h(this.AssistantDock, { C, h, open: aiOpen, setOpen: setAiOpen, context: aiContext, suggestion, tabName: tab }),
     );
-  };
-
-
-  // =====================================================================
-  //  DOCUMENTATION
-  // =====================================================================
-  Page = ({ title, lead, children }) => {
-    const h = React.createElement, C = this.C;
-    return h("div", { style: { height: "100%", overflowY: "auto", background: C.canvas } },
-      h("div", { style: { maxWidth: 860, margin: "0 auto", padding: "40px 32px 80px" } },
-        h("h1", { style: { margin: 0, fontSize: 30, fontWeight: 600, letterSpacing: "-.02em", color: C.ink } }, title),
-        lead && h("p", { style: { marginTop: 12, marginBottom: 0, fontSize: 15, lineHeight: 1.65, color: C.sub, textWrap: "pretty" } }, lead),
-        h("div", { style: { marginTop: 34, display: "flex", flexDirection: "column", gap: 30 } }, children)));
-  };
-
-  DocSection = ({ title, kicker, accent, children }) => {
-    const h = React.createElement, C = this.C;
-    return h("section", { style: { background: C.bg, border: "1px solid " + C.line, borderRadius: 12, padding: "22px 24px" } },
-      kicker && h("div", { style: { fontSize: 10.5, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: accent || C.mut, marginBottom: 7 } }, kicker),
-      h("h2", { style: { margin: 0, fontSize: 19, fontWeight: 600, letterSpacing: "-.01em", color: C.ink } }, title),
-      h("div", { style: { marginTop: 12, display: "flex", flexDirection: "column", gap: 12, fontSize: 13.5, lineHeight: 1.7, color: C.sub } }, children));
-  };
-
-  DocList = ({ items }) => {
-    const h = React.createElement, C = this.C;
-    return h("dl", { style: { margin: 0, display: "grid", gridTemplateColumns: "minmax(120px, 190px) 1fr", columnGap: 18, rowGap: 10, alignItems: "baseline" } },
-      items.map(([term, def], i) => [
-        h("dt", { key: "t" + i, style: { fontWeight: 600, color: C.ink, fontSize: 12.5 } }, term),
-        h("dd", { key: "d" + i, style: { margin: 0, fontSize: 13, lineHeight: 1.65 } }, def)]));
-  };
-
-  DocFigure = ({ src, caption }) => {
-    const h = React.createElement, C = this.C;
-    return h("figure", { style: { margin: 0, marginTop: 4 } },
-      h("a", { href: src, target: "_blank", rel: "noreferrer", style: { display: "block", border: "1px solid " + C.line, borderRadius: 10, overflow: "hidden", background: C.panel } },
-        h("img", { src: src, alt: caption, style: { display: "block", width: "100%", height: "auto" } })),
-      h("figcaption", { style: { fontSize: 12, color: C.sub, marginTop: 7, lineHeight: 1.55 } }, caption));
-  };
-
-  DocsModule = (p) => {
-    const h = React.createElement, C = this.C, G = window.Genedex;
-    const S = this.DocSection, DL = this.DocList, FIG = this.DocFigure;
-    const n = (v) => h("b", { style: { color: C.ink, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600 } }, v);
-    return h(this.Page, {
-      title: "Documentation",
-      lead: "Genedex indexes manually curated Alzheimer's disease gene lists and lets you ask which biology a set of genes keeps appearing in. Every module below reads the same corpus, so results are directly comparable."
-    }, [
-      h(S, { key: "model", kicker: "Foundation", title: "The data model", accent: C.ink },
-        h("p", { style: { margin: 0 } }, "The corpus holds gene lists covering unique genes. Each list is one gene set taken from one published analysis, with the table or figure it came from recorded alongside it."),
-        h(DL, { items: [
-          ["Functional facet", "Describes molecular pathways and pathological processes, like amyloid-\u03b2 production, aggregation and clearance. Shown as a round teal dot."],
-          ["Cellular facet", "Describes brain and peripheral cell types and states, spanning neuronal subtypes, like excitatory and inhibitory neurons. Shown as an amber diamond."],
-          ["Tissue facet", "Records the anatomical source of the signature (e.g. prefrontal cortex, hippocampus, entorhinal cortex, blood). Shown as an indigo square."],
-          ["Direction", "Whether the genes were up-regulated, down-regulated, or reported without a direction."],
-          ["Study type", "The assay behind the list: microarray, bulk RNA-seq, single-cell, proteomics and similar."]
-        ] })),
-
-      h(S, { key: "search", kicker: "Module", title: "Gene Search", accent: C.ff },
-        h("p", { style: { margin: 0 } }, "Paste a gene set and Genedex tests it against every curated list for overlap greater than chance. Each row is one list, with the size of the overlap, a hypergeometric p-value, and a Benjamini\u2013Hochberg FDR across all lists tested."),
-        h(DL, { items: [
-          ["Direction", "Restrict the corpus to up-, down-, or all-direction lists before testing."],
-          ["FDR slider", "Hides rows above the chosen FDR. At 1.00 nothing is hidden."],
-          ["Filter facet", "Free-text match against a row's facet labels. It filters the table, it does not change the statistics."],
-          ["Row actions", "Copy the overlapping genes, or push them straight into Gene Fingerprint."]
-        ] }),
-        h(FIG, { src: "docs/gene-search.png", caption: "Gene Search after running the example set. The rail holds the query and the direction filter; each result row is one curated list, sorted by FDR. Clicking a row opens the overlapping genes." })),
-
-      h(S, { key: "fp", kicker: "Module", title: "Gene Fingerprint", accent: C.ff },
-        h("p", { style: { margin: 0 } }, "A heatmap of genes against facets. Each cell counts how many lists under that facet contain the gene, so a row reads as one gene's profile across the literature and a column reads as one facet's recurring genes."),
-        h(DL, { items: [
-          ["Counting unit", "Study collapses multiple lists from one paper into a single count. List counts each list separately, which inflates well-published facets."],
-          ["Facet class", "Chooses which facet family becomes the columns: all three, functional, cellular, or tissue."],
-          ["Column pickers", "Functional facet, Cell type and Tissue facet decide which columns are displayed. They do not restrict the corpus."],
-          ["Limit to \u2026", "The restriction controls do the opposite: they drop lists that do not carry the chosen cell type or functional facet, so every count behind the matrix comes from that subset."],
-          ["Scale", "Presence shows a filled cell for any hit; # Lists shades by count; Up / Down colours by reported direction."],
-          ["Order", "Facet breadth puts the most pleiotropic genes first; Cluster groups genes with similar profiles and tags each cluster with a colour; As queried keeps your input order."],
-          ["Tissue counts", "Each tissue reads hits / lists: how many of your genes match that tissue's lists, over how many lists survive the active restrictions."],
-          ["Clicking a cell", "Opens the lists behind that count, with author, DOI and PubMed links."]
-        ] }),
-        h(FIG, { src: "docs/gene-fingerprint.png", caption: "Gene Fingerprint with Facet class set to Functional and the # Lists scale. Genes run down the rows, facets across the columns; darker cells mean the gene appears in more of that facet\u2019s lists. Set Facet class to All to add the cellular and tissue bands." }),
-        h("p", { style: { margin: 0, color: C.sub, fontSize: 13.5 } }, "Exports sit pinned at the bottom of the rail: Download CSV for the matrix as displayed, PNG for the figure, and Refs CSV for the source list behind every non-empty cell. Grid keeps the matrix shape, Long gives one row per gene, facet and list, which is the easier form to filter into a citation set.")),
-
-      h(S, { key: "net", kicker: "Module", title: "Facets Network", accent: C.tf },
-        h("p", { style: { margin: 0 } }, "Facets as nodes, joined when they share genes. It shows how the annotation vocabulary itself is organised: which biology co-occurs, and which facets are effectively redundant because their gene membership is near-identical."),
-        h(FIG, { src: "docs/facets-network.png", caption: "Facets Network at its default threshold. Teal circles are functional facets, amber diamonds cellular ones; node size tracks how many lists carry the facet. Raise Min shared genes to thin the edges, or scroll to zoom into a region." }),
-        h("p", { style: { margin: 0, color: C.sub, fontSize: 13.5 } }, "Edge threshold and significance controls set how much shared membership is needed before two facets are drawn as connected; community detection groups the facets that hang together.")),
-
-      h(S, { key: "lists", kicker: "Workspace", title: "My Lists", accent: C.ink },
-        h("p", { style: { margin: 0 } }, "Any gene set you paste or derive can be saved to My Lists for the session and reloaded into another module, so one result can be carried across Search and Fingerprint without retyping.")),
-
-    ]);
-  };
-
-  // =====================================================================
-  //  ABOUT
-  // =====================================================================
-  AboutModule = (p) => {
-    const h = React.createElement, C = this.C, G = window.Genedex;
-    const S = this.DocSection, DL = this.DocList;
-    const stat = (v, l, col) => h("div", { key: l, style: { background: C.bg, border: "1px solid " + C.line, borderRadius: 12, padding: "16px 18px" } },
-      h("div", { style: { fontSize: 26, fontWeight: 600, color: col || C.ink, fontFamily: "'IBM Plex Mono',monospace", letterSpacing: "-.02em" } }, v),
-      h("div", { style: { fontSize: 11.5, color: C.sub, marginTop: 3 } }, l));
-    return h(this.Page, {
-      title: "About Genedex",
-      lead: "Genedex is a curated index of Alzheimer's disease gene lists, built so that a gene set can be checked against the published record in one place instead of one paper at a time."
-    }, [
-      h("div", { key: "stats", style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 } }, [
-        stat(G.lists.length.toLocaleString(), "curated gene lists"),
-        stat(G.universe.length.toLocaleString(), "unique genes"),
-        stat(G.ffFacets.length, "functional facets", C.ff),
-        stat(G.cfFacets.length, "cellular facets", C.cf),
-        stat((G.tfFacets || []).length, "tissue facets", C.tf)
-      ]),
-
-      h(S, { key: "what", kicker: "Scope", title: "What is in the corpus", accent: C.ink },
-        h("p", { style: { margin: 0 } }, "Each entry is a gene list reported in a published Alzheimer's disease study, extracted from the paper's own tables and supplements rather than from a re-analysis. A single paper can contribute several lists when it reports several contrasts, cell types or regions."),
-        h("p", { style: { margin: 0 } }, "Lists are annotated by hand along three axes: the biology they describe, the cell type they were measured in, and the brain region they came from. That is what makes cross-study comparison possible."),
-        h(DL, { items: [
-          ["Recorded per list", "Accession ID, short name, first author, title, DOI, PubMed ID, functional and cellular facets, tissue, direction, study type, and the exact table or figure the genes were taken from."],
-          ["Curation note", "Most entries carry a free-text note describing how the original authors derived the list, so the derivation is visible without opening the paper."],
-          ["Gene identifiers", "Genes are held as HGNC symbols, with an alias map so historical symbols in older papers resolve to current ones."]
-        ] })),
-
-    ]);
-  };
-
-  // =====================================================================
-  //  DOWNLOAD
-  // =====================================================================
-  DownloadModule = (p) => {
-    const h = React.createElement, C = this.C, G = window.Genedex;
-    const base = (G.config && G.config.staticBase) || "data/";
-    const files = [
-      { file: "genedex-meta.json", title: "List metadata", desc: "Study, facets, tissue, and direction for each curated gene list.", size: "1.5 MB" },
-      { file: "genedex-members.json", title: "Gene memberships", desc: "HGNC symbols belonging to each list (list ID \u2192 gene array).", size: "4.0 MB" },
-      { file: "facet-definitions.json", title: "Facet definitions", desc: "Plain-language descriptions of functional, cellular, and tissue facets.", size: "57 KB" },
-      { file: "gene-aliases.json", title: "Gene aliases", desc: "Symbol remapping onto the curated HGNC universe.", size: "1.0 MB" },
-    ];
-    return h(this.Page, {
-      title: "Download",
-      lead: "The collection used by Genedex is available as JSON. These are the same files the site loads in the browser."
-    }, [
-      h("div", { key: "files", style: { display: "flex", flexDirection: "column", gap: 10 } },
-        files.map(f => h("a", {
-          key: f.file,
-          href: base + f.file,
-          download: f.file,
-          className: "gdx-mod-card",
-          style: {
-            display: "flex", alignItems: "center", gap: 16, textDecoration: "none",
-            border: "1px solid " + C.line, background: C.bg, borderRadius: 12, padding: "16px 18px",
-            transition: "border-color .15s, box-shadow .15s",
-          },
-        },
-          h("div", { style: { flex: 1, minWidth: 0 } },
-            h("div", { style: { fontSize: 15, fontWeight: 600, color: C.ink } }, f.title),
-            h("div", { style: { fontSize: 13, color: C.sub, lineHeight: 1.5, marginTop: 4 } }, f.desc),
-            h("div", { style: { fontSize: 12, color: C.mut, fontFamily: "'IBM Plex Mono',monospace", marginTop: 6 } }, f.file)),
-          h("div", { style: { flex: "0 0 auto", textAlign: "right" } },
-            h("div", { style: { fontSize: 11, fontWeight: 600, color: C.ffDark, background: C.ffBg, border: "1px solid " + C.ffLine, borderRadius: 999, padding: "6px 12px" } }, "Download"),
-            h("div", { style: { fontSize: 11, color: C.mut, marginTop: 6 } }, f.size))))),
-    ]);
   };
 
   // =====================================================================
@@ -442,14 +232,14 @@ class Component extends DCLogic {
   // =====================================================================
   NavBar = (p) => {
     const h = React.createElement, C = this.C, G = window.Genedex;
-    const tabs = [["home", "Home"], ["workbench", "Gene Workbench"], ["network", "Facets Network"], ["download", "Download"], ["docs", "Documentation"], ["about", "About"]];
+    const tabs = [["workbench", "Gene Workbench"], ["network", "Facets Network"], ["similarity", "Similarity Matrix"]];
     const tabBtn = ([id, label]) => h("button", {
       key: id, onClick: () => p.setTab(id),
       style: { border: "none", background: p.tab === id ? C.bg : "transparent", color: p.tab === id ? C.ink : C.sub,
         padding: "8px 16px", borderRadius: 8, fontSize: 13.5, fontWeight: p.tab === id ? 600 : 500, cursor: "pointer",
         boxShadow: p.tab === id ? "0 1px 3px rgba(20,30,50,.10)" : "none", transition: "all .12s" },
     }, label);
-    return h("header", { style: { display: "flex", alignItems: "center", flexWrap: "wrap", rowGap: 8, gap: 18, padding: "8px 20px", minHeight: 56,
+    return h("header", { style: { display: "flex", alignItems: "center", gap: 18, padding: "0 20px", height: 56,
       background: C.bg, borderBottom: "1px solid " + C.line, flex: "0 0 auto", zIndex: 20 } },
       // logo
       h("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
@@ -457,154 +247,32 @@ class Component extends DCLogic {
           h("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 16, fontFamily: "'IBM Plex Mono',monospace" } }, "G"),
           h("div", { style: { position: "absolute", right: -4, bottom: -4, width: 11, height: 11, background: C.cf, borderRadius: 3, border: "2px solid #fff" } })),
         h("div", { style: { fontSize: 18, fontWeight: 600, letterSpacing: "-.02em" } }, "Genedex"),
+        h("div", { style: { fontSize: 10.5, color: C.mut, fontWeight: 500, letterSpacing: ".04em", textTransform: "uppercase", marginTop: 2 } }, "AD signature engine"),
       ),
       // tabs
-      h("nav", { "aria-label": "Primary", style: { display: "flex", gap: 4, background: C.panel2, padding: 4, borderRadius: 10, marginLeft: 8 } }, tabs.map(tabBtn)),
+      h("nav", { style: { display: "flex", gap: 4, background: C.panel2, padding: 4, borderRadius: 10, marginLeft: 8 } }, tabs.map(tabBtn)),
       h("div", { style: { flex: 1 } }),
+      // stats
+      h("div", { style: { display: "flex", alignItems: "center", gap: 16, fontSize: 12, color: C.sub } },
+        h("div", null, h("b", { style: { color: C.ink, fontFamily: "'IBM Plex Mono',monospace" } }, G.lists.length.toLocaleString()), " lists"),
+        h("div", null, h("b", { style: { color: C.ink, fontFamily: "'IBM Plex Mono',monospace" } }, G.universe.length.toLocaleString()), " genes"),
+        h("div", { style: { display: "flex", gap: 6 } },
+          h("span", { style: { color: C.ff, fontWeight: 600 } }, G.ffFacets.length + " FF"),
+          h("span", { style: { color: C.cf, fontWeight: 600 } }, G.cfFacets.length + " CF"),
+          h("span", { style: { color: C.tf, fontWeight: 600 } }, (G.tfFacets || []).length + " TS"))),
       window.Genedex.synthetic && h("div", { title: "Gene memberships are placeholder/synthetic. Upload the per-list .txt files to load real gene members.", style: { display: "flex", alignItems: "center", gap: 5, background: C.cfBg, color: C.cfDark, border: "1px solid " + C.cfLine, borderRadius: 20, padding: "3px 9px", fontSize: 10.5, fontWeight: 600, letterSpacing: ".02em", cursor: "help" } }, h("span", { style: { width: 6, height: 6, borderRadius: "50%", background: C.cf } }), "DEMO DATA"),
       h("div", { style: { width: 1, height: 24, background: C.line } }),
       // dev data loader (developers only)
       p.devMode && h("button", { onClick: () => p.setDevOpen(true), title: "Developer: load real gene-list data (Alt+Shift+D)",
         style: { display: "flex", alignItems: "center", gap: 6, border: "1px solid " + C.line, background: C.panel, color: C.sub, borderRadius: 8, padding: "7px 11px", fontSize: 12.5, fontWeight: 500, cursor: "pointer" } },
         h("span", { style: { fontSize: 13 } }, "\u2699"), "Data"),
+      // my lists
       h("button", { onClick: () => p.setLegendOpen(true), title: "Facet taxonomy",
-        style: { border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "7px 12px", fontSize: 12.5, fontWeight: 500, cursor: "pointer" } }, "Facet Legend"),
+        style: { border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "7px 12px", fontSize: 12.5, fontWeight: 500, cursor: "pointer" } }, "Facet legend"),
       h("div", { style: { display: "flex", alignItems: "center", gap: 7, border: "1px solid " + C.line, borderRadius: 8, padding: "6px 11px", fontSize: 12.5, color: C.sub } },
         h("span", null, "My Lists"),
         h("span", { style: { background: p.sessionLists.length ? C.ff : C.panel2, color: p.sessionLists.length ? "#fff" : C.mut, borderRadius: 20, minWidth: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, padding: "0 5px" } }, p.sessionLists.length)),
     );
-  };
-
-  // =====================================================================
-  //  HOME
-  // =====================================================================
-  HomeModule = (p) => {
-    const h = React.createElement, C = this.C, G = window.Genedex;
-    const { useState } = React;
-    const [busy, setBusy] = useState(false);
-    const draft = p.searchInput || "";
-    const info = G.compute.resolveInfo(draft);
-    const parsed = info.genes;
-    const presets = [
-      { id: "microglia", label: "Microglia Markers", genes: ["CX3CR1", "P2RY12", "AIF1", "CSF1R", "TREM2", "ITGAM", "C1QA", "TMEM119", "TYROBP", "CD68"] },
-      { id: "dna", label: "DNA Repair", genes: ["TP53", "BRCA1", "ATM", "PARP1", "XRCC1", "ERCC2", "MLH1", "MSH2", "EGFR", "APEX1"] },
-      { id: "a1", label: "A1 Astrocytes", genes: ["C3", "GFAP", "SERPING1", "CXCL10", "GBP2", "PSMB8", "FKBP5", "SRGN", "AMIGO2", "FBLN5"] },
-      { id: "resilience", label: "Cognitive Resilience", genes: ["BDNF", "NRN1", "RBFOX1", "VGF", "NPTX2", "RELN", "NRGN", "GAP43", "CALB1", "FOXO3"] },
-    ];
-    const floorPlus = (n, step) => n >= step ? (Math.floor(n / step) * step).toLocaleString() + "+" : n.toLocaleString();
-    const nFacets = G.ffFacets.length + G.cfFacets.length + (G.tfFacets || []).length;
-    const metrics = [
-      { value: G.lists.length.toLocaleString(), label: "Curated Lists" },
-      { value: floorPlus(G.universe.length, 100), label: "Genes" },
-      { value: floorPlus(nFacets, 10), label: "Curated Facets" },
-      { value: "Multi-cohort", label: "Human Brain" },
-    ];
-    const cards = [
-      { tag: "Profile", title: "Gene Fingerprint", desc: "Profile a gene set across facets and reference lists at once.", accent: C.cf, accentBg: C.cfBg, go: () => { p.setTab("workbench"); p.setWbTab("fingerprint"); } },
-      { tag: "Explore", title: "Facets Network", desc: "See how facets relate to each other by the genes they share.", accent: C.tf, accentBg: C.tfBg, go: () => p.setTab("network") },
-    ];
-
-    const runAnalyze = async (text) => {
-      const genes = G.compute.norm(String(text || "").split(/[\s,;]+/));
-      if (!genes.length || busy) return;
-      setBusy(true);
-      try { await p.analyzeFromHome(text); }
-      finally { setBusy(false); }
-    };
-    const applyPreset = (preset) => {
-      const text = preset.genes.join("\n");
-      p.setSearchInput(text);
-      runAnalyze(text);
-    };
-
-    return h("div", { style: { height: "100%", overflowY: "auto", background: C.canvas } },
-      h("div", { className: "gdx-home-banner-wrap" },
-        h("img", {
-          className: "gdx-home-banner",
-          src: "./images/banner.png",
-          alt: "The Genedex discovery platform: paste a query gene list, search curated Alzheimer\u2019s disease signatures, and get ranked gene search results.",
-        })),
-      h("section", { "aria-labelledby": "gdx-hero-title", style: { position: "relative", overflow: "hidden", background: C.bg, borderBottom: "1px solid " + C.line } },
-        h("div", { className: "gdx-hero-pad", style: { position: "relative", maxWidth: 1080, margin: "0 auto" } },
-          h("div", { className: "gdx-hero-grid" },
-            h("div", null,
-              h("h1", { id: "gdx-hero-title", className: "gdx-hero-title" }, "Input your gene sets"),
-              h("form", {
-                onSubmit: (e) => { e.preventDefault(); runAnalyze(draft); },
-                "aria-label": "Gene Search",
-                style: { marginTop: 22 },
-              },
-                h("label", { htmlFor: "gdx-hero-genes", className: "gdx-sr-only" }, "Gene symbols"),
-                h("div", { className: "gdx-search" },
-                  h("svg", { className: "gdx-search-icon", viewBox: "0 0 24 24", width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
-                    h("circle", { cx: 11, cy: 11, r: 7 }),
-                    h("path", { d: "M20 20l-3.5-3.5" })),
-                  h("textarea", {
-                    id: "gdx-hero-genes",
-                    className: "gdx-hero-input",
-                    value: draft,
-                    onChange: (e) => p.setSearchInput(e.target.value),
-                    onKeyDown: (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); runAnalyze(draft); } },
-                    placeholder: "Enter gene symbols separated by commas, spaces, or lines (e.g., TP53, BRCA1, EGFR)\u2026",
-                    autoComplete: "off",
-                    spellCheck: false,
-                    "aria-describedby": "gdx-hero-hint gdx-hero-count",
-                  }),
-                  h("button", {
-                    type: "submit",
-                    className: "gdx-search-btn",
-                    disabled: busy || !parsed.length,
-                    "aria-busy": busy ? "true" : "false",
-                  }, busy ? "Searching\u2026" : "Search"),
-                  draft.trim() && h("button", {
-                    type: "button",
-                    className: "gdx-search-clear",
-                    "aria-label": "Clear gene list",
-                    title: "Clear",
-                    onClick: () => { p.setSearchInput(""); p.setFpInput(""); p.setSearchRes(null); },
-                  }, "\u00d7")),
-                h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginTop: 8, flexWrap: "wrap" } },
-                  h("p", { id: "gdx-hero-hint", style: { margin: 0, fontSize: 12.5, color: C.mut, lineHeight: 1.45 } }, "Whitespace is trimmed, symbols are uppercased, and aliases are remapped to HGNC."),
-                  h("p", { id: "gdx-hero-count", "aria-live": "polite", style: { margin: 0, fontSize: 12.5, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, color: parsed.length ? C.ffDark : C.mut } },
-                    parsed.length ? (parsed.length + " gene" + (parsed.length === 1 ? "" : "s")) : "No genes yet")),
-                info.remapped.length ? h("div", { style: { marginTop: 8 } }, h(this.RemappedGenes, { pairs: info.remapped })) : null,
-                info.missing.length ? h("div", { style: { marginTop: 8 } }, h(this.MissingGenes, { genes: info.missing, kicker: "not in Genedex" })) : null,
-                h("div", { style: { marginTop: 16 } },
-                  h("div", { id: "gdx-hero-examples-label", style: { fontSize: 12, fontWeight: 600, color: C.sub, marginBottom: 8 } }, "Try an example"),
-                  h("div", { role: "group", "aria-labelledby": "gdx-hero-examples-label", style: { display: "flex", flexWrap: "wrap", gap: 8 } },
-                    presets.map((preset) => h("button", {
-                      key: preset.id,
-                      type: "button",
-                      className: "gdx-hero-chip",
-                      onClick: () => applyPreset(preset),
-                      title: "Load " + preset.label + " (" + preset.genes.length + " genes) and run Gene Search",
-                      "aria-label": "Try " + preset.label + ": " + preset.genes.join(", "),
-                    }, preset.label)))),
-              )),
-            h("aside", { className: "gdx-hero-card", "aria-labelledby": "gdx-modules-title", style: { marginTop: 8 } },
-              h("h2", { id: "gdx-modules-title", style: { margin: 0, fontSize: 15, fontWeight: 600, color: C.sub, letterSpacing: "-.01em" } }, "Or jump into a module"),
-              h("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginTop: 14 } },
-                cards.map(c => h("button", { key: c.title, type: "button", className: "gdx-mod-card", onClick: c.go, style: {
-                  textAlign: "left", cursor: "pointer", border: "1px solid " + C.line, background: C.bg, borderRadius: 12,
-                  padding: "14px 14px 15px", display: "flex", flexDirection: "column", gap: 6, position: "relative", overflow: "hidden",
-                  transition: "border-color .15s, box-shadow .15s",
-                } },
-                  h("div", { style: {
-                    position: "absolute", top: 0, right: 0, fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
-                    color: c.accent, background: c.accentBg, padding: "4px 9px", borderBottomLeftRadius: 10,
-                  } }, c.tag),
-                  h("div", { style: { fontSize: 15, fontWeight: 600, color: C.ink, marginTop: 4, paddingRight: 72 } }, c.title),
-                  h("div", { style: { fontSize: 12.5, color: C.sub, lineHeight: 1.5, textWrap: "pretty" } }, c.desc),
-                )),
-              ),
-            ),
-          ),
-          h("div", { className: "gdx-metrics", role: "list", "aria-label": "Collection size" },
-            metrics.map(m => h("div", { key: m.label, className: "gdx-metric", role: "listitem" },
-              h("div", { className: "gdx-metric-val" }, m.value),
-              h("div", { className: "gdx-metric-lab" }, m.label)))),
-        ),
-      ));
   };
 
   // ---------- shared small UI ----------
@@ -617,25 +285,6 @@ class Component extends DCLogic {
         borderRadius: 6, padding: "2px 7px", fontSize: 11, fontWeight: 500, whiteSpace: "nowrap", cursor: onClick ? "pointer" : "default", lineHeight: 1.5 } },
       h("span", { style: { width: 5, height: 5, borderRadius: ff ? "50%" : tf ? 2 : 1, background: ff ? C.ff : tf ? C.tf : C.cf, transform: ff || tf ? "none" : "rotate(45deg)", flex: "0 0 auto" } }),
       name);
-  };
-
-  MissingGenes = ({ genes, kicker }) => {
-    const h = React.createElement;
-    if (!genes || !genes.length) return null;
-    return h("div", { role: "status", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 } },
-      h("span", { style: { fontSize: 11.5, fontWeight: 600, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "3px 8px", whiteSpace: "nowrap" } },
-        genes.length + " " + (kicker || "not found in any list")),
-      genes.map(g => h("span", { key: g, style: { fontFamily: "'IBM Plex Mono',monospace", fontSize: 11.5, color: "#b91c1c", background: "#fff", border: "1px solid #fecaca", borderRadius: 5, padding: "2px 7px" } }, g)));
-  };
-
-  RemappedGenes = ({ pairs }) => {
-    const h = React.createElement, C = this.C;
-    if (!pairs || !pairs.length) return null;
-    return h("div", { role: "status", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 } },
-      h("span", { style: { fontSize: 11.5, fontWeight: 600, color: C.ffDark, background: C.ffBg, border: "1px solid " + C.ffLine, borderRadius: 6, padding: "3px 8px", whiteSpace: "nowrap" } },
-        pairs.length + " alias" + (pairs.length > 1 ? "es" : "") + " remapped"),
-      pairs.map(([from, to]) => h("span", { key: from + "\u2192" + to, style: { fontFamily: "'IBM Plex Mono',monospace", fontSize: 11.5, color: C.ink, background: "#fff", border: "1px solid " + C.ffLine, borderRadius: 5, padding: "2px 7px" } },
-        from, h("span", { style: { color: C.mut, margin: "0 5px" } }, "\u2192"), to)));
   };
 
   Seg = ({ value, onChange, options, accent }) => {
@@ -665,12 +314,14 @@ class Component extends DCLogic {
     const [gmOpen, setGmOpen] = useState(null);
     const [toast, setToast] = useState("");
     const fileRef = useRef(null);
+    React.useEffect(() => { if (p.wbTab === "cotravel" && !p.ctRes && !p.ctBusy) p.runCotravel(p.ctInput, p.ctOpts); }, [p.wbTab]);
+    React.useEffect(() => { if (p.wbTab === "modules" && !p.gmRes && !p.gmBusy) p.runModules(p.gmInput, p.gmOpts); }, [p.wbTab]);
 
     const copy = (txt, msg) => { try { navigator.clipboard.writeText(txt); } catch (e) {} setToast(msg || "Copied"); setTimeout(() => setToast(""), 1400); };
     const parseCount = (t) => G.compute.norm((t || "").split(/[\s,;]+/)).length;
     const fmtP = (v) => v < 0.0001 ? v.toExponential(1) : v.toFixed(4);
 
-    const subTabs = [["search", "Gene Search"], ["fingerprint", "Gene Fingerprint"]];
+    const subTabs = [["search", "Gene Search"], ["fingerprint", "Gene Fingerprint"], ["cotravel", "Co-travelling Genes"], ["modules", "Gene Modules"]];
 
     // ---- left rail building block ----
     const railTextarea = (val, setVal, ph) => h("textarea", { value: val, onChange: e => setVal(e.target.value), placeholder: ph,
@@ -679,14 +330,7 @@ class Component extends DCLogic {
     const railBtn = (label, onClick, primary) => h("button", { onClick,
       style: { width: "100%", border: primary ? "none" : "1px solid " + C.line, background: primary ? C.act : C.bg,
         color: primary ? "#fff" : C.sub, borderRadius: 9, padding: "10px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" } }, label);
-    const exampleBtn = (which) => h("button", { onClick: () => p.loadExample(which),
-      style: { width: "100%", border: "1px dashed " + C.ffLine, background: C.ffBg, color: C.ffDark, borderRadius: 9, padding: "9px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textAlign: "left", lineHeight: 1.4 } },
-      "Try an example \u2192",
-      h("span", { style: { display: "block", fontWeight: 400, fontSize: 11, color: C.ffDark, opacity: .85, marginTop: 2 } }, p.exampleGenes.split("\n").length + " known AD genes"));
-    const railLabel = (t, hint, help) => h("div", { style: { fontSize: 11, fontWeight: 600, color: C.sub, letterSpacing: ".03em", textTransform: "uppercase", marginBottom: 7, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 } },
-      h("span", { style: { display: "flex", alignItems: "center", gap: 5, minWidth: 0 } }, t,
-        help && h("span", { title: help, style: { flex: "0 0 auto", width: 14, height: 14, borderRadius: "50%", border: "1px solid " + C.line, background: C.panel, color: C.mut, fontSize: 9.5, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "help", textTransform: "none", letterSpacing: 0 } }, "?")),
-      hint && h("span", { style: { color: C.mut, textTransform: "none", fontWeight: 500, letterSpacing: 0, flex: "0 0 auto" } }, hint));
+    const railLabel = (t, hint) => h("div", { style: { fontSize: 11, fontWeight: 600, color: C.sub, letterSpacing: ".03em", textTransform: "uppercase", marginBottom: 7, display: "flex", justifyContent: "space-between" } }, h("span", null, t), hint && h("span", { style: { color: C.mut, textTransform: "none", fontWeight: 500, letterSpacing: 0 } }, hint));
 
     const onFile = (setVal) => (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { const txt = String(r.result).split(/\r?\n/).filter(l => l && !/gene_symbol/i.test(l)).join("\n"); setVal(txt); }; r.readAsText(f); };
 
@@ -703,7 +347,7 @@ class Component extends DCLogic {
       const sort = p.searchOpts.sort;
       rows = rows.slice().sort((a, b) => sort === "overlap" ? b.nOverlap - a.nOverlap : sort === "p" ? a.p - b.p : a.fdr - b.fdr || b.nOverlap - a.nOverlap);
       const total = rows.length; rows = rows.slice(0, 250);
-      const sig = rows0.filter(r => r.fdr <= p.searchOpts.fdr).length;
+      const sig = rows0.filter(r => r.fdr < 0.05).length;
 
       const th = (label, key, w) => h("th", { onClick: key ? () => p.setSearchOpts(o => ({ ...o, sort: key })) : null,
         style: { textAlign: key === "name" || key === "facets" ? "left" : "right", padding: "8px 10px", fontSize: 10.5, fontWeight: 600, color: sort === key ? C.ink : C.mut, textTransform: "uppercase", letterSpacing: ".03em", cursor: key && key !== "name" && key !== "facets" ? "pointer" : "default", whiteSpace: "nowrap", width: w, position: "sticky", top: 0, background: C.panel, borderBottom: "1px solid " + C.line, userSelect: "none" } }, label, sort === key ? " \u2193" : "");
@@ -712,40 +356,36 @@ class Component extends DCLogic {
         // rail
         h("div", { style: { width: 300, flex: "0 0 auto", borderRight: "1px solid " + C.line, background: C.bg, padding: 18, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 } },
           h("div", null, railLabel("Query genes", parseCount(p.searchInput) + " parsed"), railTextarea(p.searchInput, p.setSearchInput, "Paste HGNC symbols\u2026")),
-          !parseCount(p.searchInput) && exampleBtn("search"),
           h("div", null, railLabel("Direction"), h(this.Seg, { value: p.searchOpts.dir, onChange: v => p.setSearchOpts(o => ({ ...o, dir: v })), options: [{ v: "All", l: "All" }, { v: "Up", l: "Up" }, { v: "Down", l: "Down" }], accent: C.ff })),
           railBtn("Run", () => p.runSearch(p.searchInput, { dir: p.searchOpts.dir }), true),
           h("div", { style: { display: "flex", gap: 8 } },
             h("button", { onClick: () => fileRef.current && fileRef.current.click(), style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "8px", fontSize: 12, cursor: "pointer" } }, "Upload file"),
-            h("button", { onClick: () => { const n = prompt("Save query as list, name:"); if (n) { p.saveList(n, G.compute.norm(p.searchInput.split(/[\s,;]+/))); setToast("Saved \u201c" + n + "\u201d"); setTimeout(() => setToast(""), 1400); } }, style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "8px", fontSize: 12, cursor: "pointer" } }, "Save as list")),
+            h("button", { onClick: () => { const n = prompt("Save query as list \u2014 name:"); if (n) { p.saveList(n, G.compute.norm(p.searchInput.split(/[\s,;]+/))); setToast("Saved \u201c" + n + "\u201d"); setTimeout(() => setToast(""), 1400); } }, style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "8px", fontSize: 12, cursor: "pointer" } }, "Save as list")),
           h("input", { ref: fileRef, type: "file", accept: ".txt,.csv", style: { display: "none" }, onChange: onFile(p.setSearchInput) }),
           loadFromLists(p.setSearchInput),
           h("div", { style: { borderTop: "1px solid " + C.line2, paddingTop: 14, fontSize: 11.5, color: C.mut, lineHeight: 1.6 } }, "Hypergeometric test against a background universe of ", h("b", { style: { color: C.sub } }, G.universe.length), " genes, Benjamini\u2013Hochberg FDR across all ", G.lists.length, " lists.")),
         // main
         h("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column" } },
           // summary banner
-          res && (() => {
-            const info = G.compute.resolveInfo(p.searchInput);
-            const nMatched = info.found.length;
-            const nLists = res.rows.length;
-            return h("div", { style: { borderBottom: "1px solid " + C.line, flex: "0 0 auto", background: C.bg } },
-              h("div", { style: { padding: (info.missing.length || info.remapped.length) ? "14px 20px 8px" : "14px 20px", display: "flex", alignItems: "center", gap: 20 } },
-                h("div", { style: { fontSize: 14 } }, h("b", { style: { fontFamily: "'IBM Plex Mono',monospace" } }, nMatched), nMatched === 1 ? " gene matched across " : " genes matched across ", h("b", { style: { fontFamily: "'IBM Plex Mono',monospace" } }, nLists), nLists === 1 ? " gene list" : " gene lists"),
-                h("div", { style: { flex: 1 } }),
-                h("div", { style: { display: "flex", alignItems: "center", gap: 14 } },
-                  h("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.sub } }, "FDR \u2264",
-                    h("input", { type: "range", min: 0, max: 1, step: 0.01, value: p.searchOpts.fdr, onChange: e => p.setSearchOpts(o => ({ ...o, fdr: +e.target.value })), style: { width: 90, accentColor: C.ff } }),
-                    h("span", { style: { fontFamily: "'IBM Plex Mono',monospace", width: 34, color: C.ink } }, p.searchOpts.fdr.toFixed(2)),
-                    h("span", { style: { color: C.sig, fontWeight: 600, whiteSpace: "nowrap" } }, "(" + sig + " significant)")),
-                  h("input", { value: p.searchOpts.facet, onChange: e => p.setSearchOpts(o => ({ ...o, facet: e.target.value })), placeholder: "Filter facet\u2026", style: { width: 130, padding: "6px 9px", border: "1px solid " + C.line, borderRadius: 7, fontSize: 12, outline: "none", color: C.ink } }))),
-              (info.remapped.length || info.missing.length) ? h("div", { style: { padding: "0 20px 12px", display: "flex", flexDirection: "column", gap: 8 } },
-                info.remapped.length ? h(this.RemappedGenes, { pairs: info.remapped }) : null,
-                info.missing.length ? h(this.MissingGenes, { genes: info.missing }) : null) : null);
-          })(),
+          res && h("div", { style: { padding: "14px 20px", borderBottom: "1px solid " + C.line, display: "flex", alignItems: "center", gap: 20, flex: "0 0 auto", background: C.bg } },
+            h("div", { style: { fontSize: 14 } }, h("b", { style: { fontFamily: "'IBM Plex Mono',monospace" } }, res.nInput), " genes matched across ", h("b", { style: { fontFamily: "'IBM Plex Mono',monospace" } }, res.rows.length), " gene lists ",
+              h("span", { style: { color: C.sig, fontWeight: 600 } }, "(" + sig + " significant at FDR < 0.05)")),
+            res && (() => {
+              const info = G.compute.resolveInfo(p.searchInput);
+              if (!info.remapped.length && !info.missing.length) return null;
+              const bits = [];
+              if (info.remapped.length) bits.push(info.remapped.length + " alias" + (info.remapped.length > 1 ? "es" : "") + " remapped");
+              if (info.missing.length) bits.push(info.missing.length + " not in any list");
+              return h("div", { title: (info.remapped.length ? "Remapped: " + info.remapped.map(x => x[0] + " \u2192 " + x[1]).join(", ") + ". " : "") + (info.missing.length ? "Not found: " + info.missing.join(", ") : ""), style: { fontSize: 11.5, color: C.mut, border: "1px solid " + C.line, borderRadius: 6, padding: "3px 8px", cursor: "help" } }, bits.join(" \u00b7 "));
+            })(),
+            h("div", { style: { flex: 1 } }),
+            // filters
+            h("div", { style: { display: "flex", alignItems: "center", gap: 14 } },
+              h("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.sub } }, "FDR \u2264",
+                h("input", { type: "range", min: 0, max: 1, step: 0.01, value: p.searchOpts.fdr, onChange: e => p.setSearchOpts(o => ({ ...o, fdr: +e.target.value })), style: { width: 90, accentColor: C.ff } }),
+                h("span", { style: { fontFamily: "'IBM Plex Mono',monospace", width: 34, color: C.ink } }, p.searchOpts.fdr.toFixed(2))),
+              h("input", { value: p.searchOpts.facet, onChange: e => p.setSearchOpts(o => ({ ...o, facet: e.target.value })), placeholder: "Filter facet\u2026", style: { width: 130, padding: "6px 9px", border: "1px solid " + C.line, borderRadius: 7, fontSize: 12, outline: "none", color: C.ink } }))),
           // table
-          !res ? h("div", { style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, color: C.mut, fontSize: 13.5, padding: 40, textAlign: "center" } },
-            h("div", { style: { maxWidth: 420, lineHeight: 1.6 } }, "Paste HGNC symbols in the rail and run the search to test your gene set against every curated list."),
-            h("button", { onClick: () => p.loadExample("search"), style: { border: "1px solid " + C.ffLine, background: C.ffBg, color: C.ffDark, borderRadius: 9, padding: "9px 16px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" } }, "Try an example \u2192")) :
           h("div", { style: { flex: 1, minHeight: 0, overflow: "auto", background: C.bg } },
             h("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 12.5 } },
               h("thead", null, h("tr", null, th("GL ID", "gl", 96), th("List", "name"), th("Facets", "facets"), th("Dir", null, 44), th("n\u2229", "overlap", 54), th("Ref", null, 50), th("p", "p", 78), th("FDR", "fdr", 78), th("", null, 90))),
@@ -766,12 +406,6 @@ class Component extends DCLogic {
                     h("td", { colSpan: 9, style: { padding: 0, background: C.panel } },
                       h("div", { style: { padding: "14px 18px", borderBottom: "1px solid " + C.line, display: "flex", flexDirection: "column", gap: 10 } },
                         r.title && h("div", { style: { fontSize: 12, color: C.sub, fontStyle: "italic", maxWidth: 760 } }, "\u201c" + r.title + "\u201d"),
-                        (() => { const full = metaByGl[r.gl] || {}; return h("div", { style: { display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: 11.5 } },
-                          full.tissue ? h("div", null, h("span", { style: { color: C.mut } }, "Tissue: "), h("span", { style: { color: C.ink, fontWeight: 500 } }, full.tissue)) : null,
-                          full.studyType ? h("div", null, h("span", { style: { color: C.mut } }, "Study: "), h("span", { style: { color: C.ink, fontWeight: 500 } }, full.studyType)) : null,
-                          full.genetic ? h("div", null, h("span", { style: { color: C.mut } }, "Model: "), h("span", { style: { color: C.ink, fontWeight: 500 } }, full.genetic)) : null); })(),
-                        (() => { const full = metaByGl[r.gl] || {}; return full.notes ? h("div", { style: { fontSize: 11.5, color: C.sub, lineHeight: 1.45, fontStyle: "italic", maxWidth: 760 } }, full.notes) : null; })(),
-                        (() => { const full = metaByGl[r.gl] || {}; return full.contributor ? h("div", { style: { fontSize: 11, color: C.mut } }, "Contributed by " + full.contributor) : null; })(),
                         h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } },
                           h("span", { style: { fontSize: 11, fontWeight: 600, color: C.sub } }, r.nOverlap + " overlap genes:"),
                           r.doi && h("a", { href: "https://doi.org/" + r.doi, target: "_blank", style: { fontSize: 11, color: C.blue, textDecoration: "none" } }, "DOI \u2197"),
@@ -780,71 +414,52 @@ class Component extends DCLogic {
                         h("div", { style: { display: "flex", gap: 8, marginTop: 4 } },
                           h("button", { onClick: () => copy(r.overlap.join("\n"), "Copied " + r.nOverlap + " genes"), style: { border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 7, padding: "6px 11px", fontSize: 11.5, cursor: "pointer" } }, "Copy genes"),
                           h("button", { onClick: () => p.pushToFingerprint(r.overlap), style: { border: "1px solid " + C.ffLine, background: C.ffBg, color: C.ffDark, borderRadius: 7, padding: "6px 11px", fontSize: 11.5, fontWeight: 600, cursor: "pointer" } }, "Add to Fingerprint \u2192"),
-                          )))),
+                          h("button", { onClick: () => p.pushToCotravel(r.overlap), style: { border: "1px solid " + C.cfLine, background: C.cfBg, color: C.cfDark, borderRadius: 7, padding: "6px 11px", fontSize: 11.5, fontWeight: 600, cursor: "pointer" } }, "Add to Co-travelling \u2192"))))),
                 ];
               }))),
             total > 250 && h("div", { style: { padding: 12, textAlign: "center", fontSize: 12, color: C.mut } }, "Showing top 250 of " + total + " lists with overlap"),
-            rows.length === 0 && h("div", { style: { padding: 60, textAlign: "center", color: C.mut, fontSize: 13 } }, "No lists pass the current filters. Try raising the FDR threshold or clearing the facet filter."))));
+            rows.length === 0 && h("div", { style: { padding: 60, textAlign: "center", color: C.mut, fontSize: 13 } }, "No lists pass the current filters \u2014 try raising the FDR threshold or clearing the facet filter."))));
     };
 
     // ================= FINGERPRINT =================
     const renderFingerprint = () => {
       const res = p.fpRes;
-      // tissue counts under the active corpus restrictions (direction, study type,
-      // contrast, functional / cellular limits) — the tissue selection itself is
-      // excluded so the numbers show what each tissue would contribute.
-      const fpTissueCounts = (() => {
-        const o = p.fpOpts;
-        const reqFf = (o.restrictFf || []).length ? new Set(o.restrictFf) : null;
-        const reqCf = (o.restrictCf || []).length ? new Set(o.restrictCf) : null;
-        const types = (o.types || []).length ? new Set(o.types) : null;
-        const contrasts = (o.contrasts || []).length ? new Set(o.contrasts) : null;
-        const restricted = !!(reqFf || reqCf || types || contrasts || (o.dir && o.dir !== "All"));
-        if (!restricted) return null;
-        const qset = new Set((p.fpRes && p.fpRes.rows) ? p.fpRes.rows.map(r => r.gene) : G.compute.norm((p.fpInput || "").split(/[\s,;]+/)));
-        const cls = o.facetClass || "both";
-        const inClass = (l) => cls === "ff" ? l.ffAtoms.length > 0
-          : cls === "cf" ? l.cfAtoms.length > 0
-          : cls === "tf" ? !!l.tissue
-          : (l.ffAtoms.length > 0 || l.cfAtoms.length > 0 || !!l.tissue);
-        const out = {};
-        G.lists.forEach(l => {
-          if (o.dir && o.dir !== "All" && l.dir !== o.dir) return;
-          if (types && !types.has(l.listType)) return;
-          if (contrasts && !contrasts.has(l.contrast)) return;
-          if (reqFf && !l.ffAtoms.some(f => reqFf.has(f))) return;
-          if (reqCf && !l.cfAtoms.some(f => reqCf.has(f))) return;
-          const e = out[l.tissue] || (out[l.tissue] = { pass: 0, hit: 0 });
-          e.pass++;
-          if (qset.size && inClass(l) && l.genes.some(g => qset.has(g))) e.hit++;
-        });
-        return out;
-      })();
       const viewRes = res ? this.fpView(res, p.fpOpts.facetClass || "both", p.fpOpts.cluster, p.fpOpts.cellTypes, p.fpOpts.funcFacets || [], p.fpOpts.rowOrder || "breadth", p.fpOpts.tissueFacets || []) : null;
       return h("div", { style: { display: "flex", height: "100%", minHeight: 0 } },
         h("div", { style: { width: 300, flex: "0 0 auto", borderRight: "1px solid " + C.line, background: C.bg, padding: 18, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 } },
           h("div", null, railLabel("Genes to profile", parseCount(p.fpInput) + " parsed"), railTextarea(p.fpInput, p.setFpInput, "Paste HGNC symbols\u2026")),
-          !parseCount(p.fpInput) && exampleBtn("fingerprint"),
           railBtn("Build fingerprint", () => p.runFingerprint(p.fpInput, p.fpOpts), true),
           h("button", { onClick: () => { if (p.searchRes) { const g = [...new Set(p.searchRes.rows.filter(r => r.fdr < 0.05).flatMap(r => r.overlap))]; p.setFpInput(g.join("\n")); p.runFingerprint(g.join("\n"), p.fpOpts); } }, style: { width: "100%", border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 9, padding: "9px", fontSize: 12.5, cursor: "pointer" } }, "Load from search hits"),
           loadFromLists(p.setFpInput),
-          h("div", null, railLabel("Order", (p.fpOpts.rowOrder || "breadth") === "cluster" ? "similarity" : (p.fpOpts.rowOrder === "input" ? "as queried" : "facet breadth"), "Row order. Facet breadth puts the most pleiotropic genes first, Cluster groups genes with similar profiles, As queried keeps your input order."), h(this.Seg, { value: p.fpOpts.rowOrder || "breadth", onChange: v => p.setFpOpts(o => ({ ...o, rowOrder: v, cluster: v === "cluster" })), options: [{ v: "breadth", l: "Breadth" }, { v: "cluster", l: "Cluster" }, { v: "input", l: "As queried" }], accent: C.cf }),
-            h("div", { style: { fontSize: 10.5, color: C.mut, lineHeight: 1.5, marginTop: 6 } }, "As queried keeps rows in the order you typed the genes.")),
-          h("div", null, railLabel("Counting unit", (p.fpOpts.unit || "study") === "study" ? "study" : "raw", "Study counts one paper once even when it contributed several lists. List counts every list separately, which inflates well-published facets."),
+          h("div", null, railLabel("Counting unit", (p.fpOpts.unit || "study") === "study" ? "independent" : "raw"),
             h(this.Seg, { value: p.fpOpts.unit || "study", onChange: v => { const no = { ...p.fpOpts, unit: v }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); },
               options: [{ v: "study", l: "Study" }, { v: "list", l: "List" }] }),
             h("div", { style: { fontSize: 10.5, color: C.mut, lineHeight: 1.5, marginTop: 6 } },
               (p.fpOpts.unit || "study") === "study"
-                ? "One paper split into up/down and per-cell-type lists counts once."
-                : "Counting raw lists. Multiple lists from one paper each count separately.")),
-          h("div", null, railLabel("Scale", null, "How cells are shaded: Presence marks any hit, # Lists shades by how many lists contain the gene, Up / Down colours by reported direction."), h(this.Seg, { value: p.fpOpts.mode, onChange: v => p.setFpOpts(o => ({ ...o, mode: v })), options: [{ v: "binary", l: "Presence" }, { v: "count", l: "# Lists" }, { v: "direction", l: "Up / Down" }] })),
+                ? "One paper split into up/down and per-cell-type lists counts once. This is what makes the hypergeometric\u2019s independence assumption hold \u2014 counting lists treats a single study\u2019s internal splits as replications and inflates every p-value."
+                : "Counting raw lists. Multiple lists from one paper each count separately, so p-values are anti-conservative. Use for comparison against the study-level result, not for reporting.")),
+          res && h("div", { style: { border: "1px solid " + C.line, borderRadius: 8, padding: "9px 11px", background: C.panel, fontSize: 10.5, color: C.mut, lineHeight: 1.6, fontFamily: "'IBM Plex Mono',monospace" } },
+            h("div", { style: { fontFamily: "inherit", fontWeight: 600, color: C.sub, marginBottom: 4, textTransform: "uppercase", letterSpacing: ".03em" } }, "Test provenance"),
+            h("div", null, "N = " + res.nUnits + " " + (res.unit === "study" ? "studies" : "lists") + " (from " + res.nLists + " lists)"),
+            h("div", null, "hypergeometric, degree-conditioned"),
+            h("div", null, "BH over m = " + res.nTests + " cells"),
+            h("div", null, res.nSig + " significant at q<" + res.sigAlpha + (res.nFragile ? ", " + res.nFragile + (res.unit === "list" ? " single-list" : " single-study") : "")),
+            res.nSig === 0 && h("div", { style: { fontFamily: "inherit", color: "#b45309", marginTop: 5, lineHeight: 1.55 } },
+              "Nothing survives correction here. Smallest p in the matrix is " + (res.minP != null ? (res.minP < 0.001 ? res.minP.toExponential(1) : res.minP.toFixed(4)) : "n/a") + " against m = " + res.nTests + ", and N = " + res.nUnits + " " + (res.unit === "study" ? "studies" : "lists") + " caps how small any p can get. This is low power, not a failure \u2014 the raw counts in the heatmap still stand. Switch the counting unit to List to see the anti-conservative comparison."),
+            h("div", null, "filters: " + (res.dir === "All" ? "all directions" : res.dir) + (p.fpOpts.tissues.length ? ", " + p.fpOpts.tissues.length + " tissue" : "") + (p.fpOpts.restrictFf.length || p.fpOpts.restrictCf.length ? ", restricted" : ""))),
+          h("div", null, railLabel("Scale"), h(this.Seg, { value: p.fpOpts.mode, onChange: v => p.setFpOpts(o => ({ ...o, mode: v })), options: [{ v: "binary", l: "Presence" }, { v: "count", l: "# Lists" }, { v: "direction", l: "Up / Down" }] })),
+          h("div", null, railLabel("Significance"),
+            h("label", { style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12 } },
+              h("input", { type: "checkbox", checked: !!p.fpOpts.showSig, onChange: () => p.setFpOpts(o => ({ ...o, showSig: !o.showSig })), style: { accentColor: C.sig } }),
+              h("span", { style: { color: C.sub } }, "Mark enriched cells ", h("b", { style: { color: C.ink } }, "\u2731"))),
+            h("div", { style: { fontSize: 10.5, color: C.mut, lineHeight: 1.5, marginTop: 6 } }, "\u2731 = the gene appears in more of that facet\u2019s lists than its overall membership rate predicts (hypergeometric, BH-FDR < 0.05).")),
           p.fpOpts.mode === "direction" && h("div", { style: { display: "flex", gap: 12, fontSize: 11, color: C.sub, padding: "0 2px" } },
             h("span", { style: { display: "flex", alignItems: "center", gap: 5 } }, h("span", { style: { width: 11, height: 11, borderRadius: 3, background: "#d6453f" } }), "Up-regulated"),
             h("span", { style: { display: "flex", alignItems: "center", gap: 5 } }, h("span", { style: { width: 11, height: 11, borderRadius: 3, background: "#2f6fb0" } }), "Down"),
             h("span", { style: { display: "flex", alignItems: "center", gap: 5 } }, h("span", { style: { width: 11, height: 11, borderRadius: 3, background: "#8a5bb8" } }), "Mixed")),
-          h("div", null, railLabel("Direction filter", null, "Restricts the corpus to up-regulated, down-regulated or all lists before anything is counted."), h(this.Seg, { value: p.fpOpts.dir, onChange: v => { const no = { ...p.fpOpts, dir: v }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, options: [{ v: "All", l: "All" }, { v: "Up", l: "Up" }, { v: "Down", l: "Down" }], accent: C.ff })),
-          h("div", null, railLabel("Facet class", null, "Which facet family forms the matrix columns: all three, functional, cellular or tissue."), h(this.Seg, { value: p.fpOpts.facetClass || "both", onChange: v => { const no = { ...p.fpOpts, facetClass: v }; if (v !== "ff" && v !== "tf") no.restrictCf = []; if (v !== "cf" && v !== "tf") no.restrictFf = []; const had = (p.fpOpts.restrictCf || []).length || (p.fpOpts.restrictFf || []).length; p.setFpOpts(no); if (had) p.runFingerprint(p.fpInput, no); }, options: [{ v: "both", l: "All" }, { v: "ff", l: "Functional" }, { v: "cf", l: "Cellular" }, { v: "tf", l: "Tissue" }], accent: C.ff })),
-          ["both", "ff"].includes(p.fpOpts.facetClass || "both") && h("div", null, railLabel("Functional facet", p.fpOpts.funcFacets && p.fpOpts.funcFacets.length ? p.fpOpts.funcFacets.length + " of " + G.ffFacets.length : "all", "Chooses which functional facet columns are displayed. It does not change which lists are counted."),
+          h("div", null, railLabel("Direction filter"), h(this.Seg, { value: p.fpOpts.dir, onChange: v => { const no = { ...p.fpOpts, dir: v }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, options: [{ v: "All", l: "All" }, { v: "Up", l: "Up" }, { v: "Down", l: "Down" }], accent: C.ff })),
+          h("div", null, railLabel("Facet class"), h(this.Seg, { value: p.fpOpts.facetClass || "both", onChange: v => { const no = { ...p.fpOpts, facetClass: v }; if (v !== "ff" && v !== "tf") no.restrictCf = []; if (v !== "cf" && v !== "tf") no.restrictFf = []; const had = (p.fpOpts.restrictCf || []).length || (p.fpOpts.restrictFf || []).length; p.setFpOpts(no); if (had) p.runFingerprint(p.fpInput, no); }, options: [{ v: "both", l: "All" }, { v: "ff", l: "Functional" }, { v: "cf", l: "Cellular" }, { v: "tf", l: "Tissue" }], accent: C.ff })),
+          ["both", "ff"].includes(p.fpOpts.facetClass || "both") && h("div", null, railLabel("Functional facet", p.fpOpts.funcFacets && p.fpOpts.funcFacets.length ? p.fpOpts.funcFacets.length + " of " + G.ffFacets.length : "all"),
             h("div", { style: { display: "flex", gap: 5, marginBottom: 6 } },
               h("button", { onClick: () => p.setFpOpts(o => ({ ...o, funcFacets: [...G.ffFacets] })), style: { flex: 1, border: "1px solid " + C.ffLine, background: C.ffBg, color: C.ffDark, borderRadius: 7, padding: "5px", fontSize: 11, cursor: "pointer" } }, "All"),
               h("button", { onClick: () => p.setFpOpts(o => ({ ...o, funcFacets: [] })), style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 7, padding: "5px", fontSize: 11, cursor: "pointer" } }, "Clear")),
@@ -853,7 +468,7 @@ class Component extends DCLogic {
               h("span", { style: { width: 8, height: 8, borderRadius: "50%", background: C.ff, flex: "0 0 auto" } }),
               h("span", { style: { flex: 1, color: on ? C.ffDark : C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, f),
               h("span", { style: { fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: C.mut } }, (G.facetMeta[f] && G.facetMeta[f].nLists) || 0)); }))),
-          ["both", "cf"].includes(p.fpOpts.facetClass || "both") && h("div", null, railLabel("Cell type", p.fpOpts.cellTypes.length ? p.fpOpts.cellTypes.length + " of " + G.cfFacets.length : "all", "Chooses which cellular facet columns are displayed. It does not change which lists are counted."),
+          ["both", "cf"].includes(p.fpOpts.facetClass || "both") && h("div", null, railLabel("Cell type", p.fpOpts.cellTypes.length ? p.fpOpts.cellTypes.length + " of " + G.cfFacets.length : "all"),
             h("div", { style: { display: "flex", gap: 5, marginBottom: 6 } },
               h("button", { onClick: () => p.setFpOpts(o => ({ ...o, cellTypes: [...G.cfFacets] })), style: { flex: 1, border: "1px solid " + C.cfLine, background: C.cfBg, color: C.cfDark, borderRadius: 7, padding: "5px", fontSize: 11, cursor: "pointer" } }, "All"),
               h("button", { onClick: () => p.setFpOpts(o => ({ ...o, cellTypes: [] })), style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 7, padding: "5px", fontSize: 11, cursor: "pointer" } }, "Clear")),
@@ -862,7 +477,7 @@ class Component extends DCLogic {
               h("span", { style: { width: 8, height: 8, background: C.cf, transform: "rotate(45deg)", flex: "0 0 auto" } }),
               h("span", { style: { flex: 1, color: on ? C.cfDark : C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, f),
               h("span", { style: { fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: C.mut } }, (G.facetMeta[f] && G.facetMeta[f].nLists) || 0)); }))),
-          ((p.fpOpts.facetClass || "both") === "both" || (p.fpOpts.facetClass || "both") === "tf") && h("div", null, railLabel("Tissue facet", (p.fpOpts.tissueFacets || []).length ? p.fpOpts.tissueFacets.length + " of " + (G.tfFacets || []).length : "all", "Chooses which tissue columns are displayed. It does not change which lists are counted."),
+          ((p.fpOpts.facetClass || "both") === "both" || (p.fpOpts.facetClass || "both") === "tf") && h("div", null, railLabel("Tissue facet", (p.fpOpts.tissueFacets || []).length ? p.fpOpts.tissueFacets.length + " of " + (G.tfFacets || []).length : "all"),
             h("div", { style: { fontSize: 10.5, color: C.mut, lineHeight: 1.5, marginBottom: 7 } }, "Columns are tissues of origin. A hit means the gene was reported in a list from that tissue."),
             h("div", { style: { display: "flex", gap: 5, marginBottom: 6 } },
               h("button", { onClick: () => p.setFpOpts(o => ({ ...o, tissueFacets: [...(G.tfFacets || [])] })), style: { flex: 1, border: "1px solid " + C.tfLine, background: C.tfBg, color: C.tfDark, borderRadius: 7, padding: "5px", fontSize: 11, cursor: "pointer" } }, "All"),
@@ -892,7 +507,9 @@ class Component extends DCLogic {
               h("span", { style: { width: 8, height: 8, borderRadius: "50%", background: C.ff, flex: "0 0 auto" } }),
               h("span", { style: { flex: 1, color: on ? C.ffDark : C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, f),
               h("span", { style: { fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: C.mut } }, (G.facetMeta[f] && G.facetMeta[f].nLists) || 0)); }))),
-          h("div", null, railLabel("Gene-list type", p.fpOpts.types.length ? p.fpOpts.types.length + " of 4" : "all", "Keeps only lists produced by the selected assay types, so counts come from that subset of the corpus."),
+          h("div", null, railLabel("Order", (p.fpOpts.rowOrder || "breadth") === "cluster" ? "similarity" : (p.fpOpts.rowOrder === "input" ? "as queried" : "facet breadth")), h(this.Seg, { value: p.fpOpts.rowOrder || "breadth", onChange: v => p.setFpOpts(o => ({ ...o, rowOrder: v, cluster: v === "cluster" })), options: [{ v: "breadth", l: "Breadth" }, { v: "cluster", l: "Cluster" }, { v: "input", l: "As queried" }], accent: C.cf }),
+            h("div", { style: { fontSize: 10.5, color: C.mut, lineHeight: 1.5, marginTop: 6 } }, "As queried keeps rows in the order you typed the genes.")),
+          h("div", null, railLabel("Gene-list type", p.fpOpts.types.length ? p.fpOpts.types.length + " of 4" : "all"),
             h("div", { style: { display: "flex", gap: 5, marginBottom: 6 } },
               h("button", { onClick: () => { const no = { ...p.fpOpts, types: G.LIST_TYPES.map(t => t.id) }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, style: { flex: 1, border: "1px solid " + C.line, background: C.panel2, color: C.ink, borderRadius: 7, padding: "5px", fontSize: 11, cursor: "pointer" } }, "Select all"),
               h("button", { onClick: () => { const no = { ...p.fpOpts, types: [] }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 7, padding: "5px", fontSize: 11, cursor: "pointer" } }, "Clear")),
@@ -900,7 +517,7 @@ class Component extends DCLogic {
               h("input", { type: "checkbox", checked: on, onChange: () => { const types = on ? p.fpOpts.types.filter(x => x !== t.id) : [...p.fpOpts.types, t.id]; const no = { ...p.fpOpts, types }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, style: { accentColor: C.act } }),
               h("span", { style: { flex: 1, color: on ? C.ink : C.sub } }, t.label),
               h("span", { style: { fontSize: 10.5, fontFamily: "'IBM Plex Mono',monospace", color: C.mut } }, G.listTypeCounts[t.id] || 0)); }))),
-          G.contrasts && G.contrasts.length ? h("div", null, railLabel("Contrast", p.fpOpts.contrasts.length ? p.fpOpts.contrasts.length + " selected" : "all", "Keeps only lists reporting the selected comparison, so counts come from that subset of the corpus."),
+          G.contrasts && G.contrasts.length ? h("div", null, railLabel("Contrast", p.fpOpts.contrasts.length ? p.fpOpts.contrasts.length + " selected" : "all"),
             h("div", { style: { display: "flex", gap: 5, marginBottom: 6 } },
               h("button", { onClick: () => { const no = { ...p.fpOpts, contrasts: [...G.contrasts] }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, style: { flex: 1, border: "1px solid #cdddfb", background: C.blueBg, color: C.blue, borderRadius: 7, padding: "5px", fontSize: 11, cursor: "pointer" } }, "Select all"),
               h("button", { onClick: () => { const no = { ...p.fpOpts, contrasts: [] }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 7, padding: "5px", fontSize: 11, cursor: "pointer" } }, "Clear")),
@@ -908,31 +525,24 @@ class Component extends DCLogic {
               h("input", { type: "checkbox", checked: on, onChange: () => { const contrasts = on ? p.fpOpts.contrasts.filter(x => x !== c) : [...p.fpOpts.contrasts, c]; const no = { ...p.fpOpts, contrasts }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, style: { accentColor: C.blue } }),
               h("span", { style: { flex: 1, color: on ? C.ink : C.sub } }, c),
               h("span", { style: { fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: C.mut } }, G.contrastCounts[c])); }))) : null,
-          h("div", null, railLabel("Tissue", p.fpOpts.tissues.length ? p.fpOpts.tissues.length + " selected" : fpTissueCounts ? "hits / lists" : "all", "Keeps only lists from the selected brain regions. With restrictions active, each row reads hits / lists: query genes matched, over lists that pass."),
+          h("div", null, railLabel("Tissue", p.fpOpts.tissues.length ? p.fpOpts.tissues.length + " selected" : "all"),
             h("div", { style: { display: "flex", gap: 5, marginBottom: 6 } },
               h("button", { onClick: () => { const no = { ...p.fpOpts, tissues: [...G.tissues] }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, style: { flex: 1, border: "1px solid " + C.cfLine, background: C.cfBg, color: C.cfDark, borderRadius: 7, padding: "5px", fontSize: 11, cursor: "pointer" } }, "Select all"),
               h("button", { onClick: () => { const no = { ...p.fpOpts, tissues: [] }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 7, padding: "5px", fontSize: 11, cursor: "pointer" } }, "Clear")),
             h("div", { style: { maxHeight: 150, overflowY: "auto", border: "1px solid " + C.line, borderRadius: 8, padding: 6, display: "flex", flexDirection: "column", gap: 2 } }, G.tissues.map(t => { const on = p.fpOpts.tissues.includes(t); return h("label", { key: t, style: { display: "flex", alignItems: "center", gap: 7, padding: "4px 6px", borderRadius: 6, cursor: "pointer", fontSize: 11.5, background: on ? C.panel2 : "transparent" } },
               h("input", { type: "checkbox", checked: on, onChange: () => { const tissues = on ? p.fpOpts.tissues.filter(x => x !== t) : [...p.fpOpts.tissues, t]; const no = { ...p.fpOpts, tissues }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, style: { accentColor: C.cf } }),
               h("span", { style: { flex: 1, color: on ? C.ink : C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, t),
-              (() => { if (!fpTissueCounts) return h("span", { style: { fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: C.mut } }, G.tissueCounts[t]);
-                const e = fpTissueCounts[t] || { pass: 0, hit: 0 };
-                return h("span", { title: e.hit + " of " + e.pass + " list(s) passing the active restrictions contain a query gene and carry an annotation in the active facet class (" + G.tissueCounts[t] + " lists in total)",
-                  style: { fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: e.hit === 0 ? "#cbd2dc" : C.ffDark } },
-                  e.hit + "/" + e.pass); })()); })),
+              h("span", { style: { fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: C.mut } }, G.tissueCounts[t])); })),
             (p.fpOpts.tissues.length || p.fpOpts.types.length || p.fpOpts.contrasts.length || (p.fpOpts.restrictFf || []).length || (p.fpOpts.restrictCf || []).length) ? h("button", { onClick: () => { const no = { ...p.fpOpts, tissues: [], types: [], contrasts: [], restrictFf: [], restrictCf: [] }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, style: { marginTop: 6, border: "none", background: "none", color: C.blue, fontSize: 11, cursor: "pointer", padding: 0 } }, "Clear all filters") : null),
-          h("div", { style: { borderTop: "1px solid " + C.line2, paddingTop: 14, fontSize: 11.5, color: C.mut, lineHeight: 1.6 } }, p.fpOpts.cluster ? "Each cell = number of lists under a facet that contain the gene. Rows and facets are reordered so genes with similar fingerprints sit together; the coloured tab beside each gene marks its cluster." : "Each cell = number of lists under a facet that contain the gene. Rows sorted by facet breadth. Switch Order to Cluster to group similar genes."),
-          res && h("div", { style: { position: "sticky", bottom: -18, marginTop: "auto", background: C.bg, borderTop: "1px solid " + C.line, padding: "12px 0 18px", display: "flex", flexDirection: "column", gap: 8, zIndex: 3 } },
-            railLabel("Export", res.rows.length + " genes"),
-          h("div", { style: { display: "flex", gap: 8, alignItems: "stretch" } },
-            h("button", { onClick: () => { const q = v => { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }; let csv = ["gene", ...res.ffCols, ...res.cfCols, ...(res.tfCols || [])].map(q).join(",") + "\n"; res.rows.forEach(r => { csv += [r.gene, ...r.ff, ...r.cf, ...(r.tf || [])].map(q).join(",") + "\n"; }); const blob = new Blob([csv], { type: "text/csv;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "genedex-fingerprint.csv"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }, style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "8px", fontSize: 12, cursor: "pointer" } }, "Download CSV"),
+          res && h("div", { style: { display: "flex", gap: 8, alignItems: "stretch" } },
+            h("button", { onClick: () => { let csv = "gene," + [...res.ffCols, ...res.cfCols, ...(res.tfCols || [])].join(",") + "\n"; res.rows.forEach(r => { csv += r.gene + "," + [...r.ff, ...r.cf, ...(r.tf || [])].join(",") + "\n"; }); copy(csv, "CSV copied"); }, style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "8px", fontSize: 12, cursor: "pointer" } }, "Copy CSV"),
             h("div", { style: { flex: 1, display: "flex", border: "1px solid " + C.line, borderRadius: 8, overflow: "hidden", background: C.bg } },
               h("span", { style: { display: "flex", alignItems: "center", padding: "0 9px", fontSize: 12, color: C.sub, borderRight: "1px solid " + C.line2, whiteSpace: "nowrap" } }, "PNG"),
-              [["150", 150], ["300", 300], ["600", 600]].map(([lbl, d], i) => h("button", { key: lbl, onClick: () => this.exportFingerprintPNG(viewRes, p.fpOpts.mode, d, p.fpOpts), title: "Download at " + d + " DPI", style: { flex: 1, border: "none", borderLeft: i ? "1px solid " + C.line2 : "none", background: "transparent", color: d === 300 ? C.ffDark : C.sub, fontWeight: d === 300 ? 600 : 400, padding: "8px 0", fontSize: 12, cursor: "pointer" } }, lbl)))),
-          h("div", { style: { display: "flex", border: "1px solid " + C.line, borderRadius: 8, overflow: "hidden", background: C.bg } },
+              [["150", 150], ["300", 300], ["600", 600]].map(([lbl, d], i) => h("button", { key: lbl, onClick: () => this.exportFingerprintPNG(viewRes, p.fpOpts.mode, d), title: "Download at " + d + " DPI", style: { flex: 1, border: "none", borderLeft: i ? "1px solid " + C.line2 : "none", background: "transparent", color: d === 300 ? C.ffDark : C.sub, fontWeight: d === 300 ? 600 : 400, padding: "8px 0", fontSize: 12, cursor: "pointer" } }, lbl)))),
+          res && h("div", { style: { display: "flex", border: "1px solid " + C.line, borderRadius: 8, overflow: "hidden", background: C.bg } },
             h("span", { style: { display: "flex", alignItems: "center", padding: "0 9px", fontSize: 12, color: C.sub, borderRight: "1px solid " + C.line2, whiteSpace: "nowrap" } }, "Refs CSV"),
             [["Grid", "grid", "Genes \u00d7 facets, each cell listing the source references behind the hit"], ["Long", "long", "One row per gene \u00d7 facet \u00d7 source list"]].map(([lbl, lay, tip], i) => h("button", { key: lay, onClick: () => this.exportFingerprintRefs(viewRes, p.fpInput, p.fpOpts, lay), title: tip, style: { flex: 1, border: "none", borderLeft: i ? "1px solid " + C.line2 : "none", background: "none", color: C.sub, padding: "8px 0", fontSize: 12, cursor: "pointer" } }, lbl))),
-          )),
+          h("div", { style: { borderTop: "1px solid " + C.line2, paddingTop: 14, fontSize: 11.5, color: C.mut, lineHeight: 1.6 } }, p.fpOpts.cluster ? "Each cell = number of lists under a facet that contain the gene. Rows and facets are reordered so genes with similar fingerprints sit together; the coloured tab beside each gene marks its cluster." : "Each cell = number of lists under a facet that contain the gene. Rows sorted by facet breadth \u2014 switch Order to Cluster to group similar genes.")),
         h("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: C.canvas } },
           h("div", { style: { padding: "12px 20px", borderBottom: "1px solid " + C.line, background: C.bg, display: "flex", alignItems: "center", gap: 16, flex: "0 0 auto" } },
             h("div", { style: { fontSize: 14, fontWeight: 600 } }, "Gene Fingerprint"),
@@ -940,12 +550,13 @@ class Component extends DCLogic {
             res && (() => {
               const info = G.compute.resolveInfo(p.fpInput);
               if (!info.remapped.length && !info.missing.length) return null;
-              return h("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 } },
-                info.remapped.length ? h(this.RemappedGenes, { pairs: info.remapped }) : null,
-                info.missing.length ? h(this.MissingGenes, { genes: info.missing }) : null);
+              const bits = [];
+              if (info.remapped.length) bits.push(info.remapped.length + " alias" + (info.remapped.length > 1 ? "es" : "") + " remapped");
+              if (info.missing.length) bits.push(info.missing.length + " not in any list");
+              return h("div", { title: (info.remapped.length ? "Remapped: " + info.remapped.map(x => x[0] + " \u2192 " + x[1]).join(", ") + ". " : "") + (info.missing.length ? "Not found: " + info.missing.join(", ") : ""), style: { fontSize: 11.5, color: C.mut, border: "1px solid " + C.line, borderRadius: 6, padding: "3px 8px", cursor: "help" } }, bits.join(" \u00b7 "));
             })(),
             h("div", { style: { flex: 1 } }),
-            p.fpOpts.cluster && viewRes.clusterCount ? h("div", { title: "Genes are grouped into clusters by how similar their fingerprints are across the facets. Each colour marks one cluster. It has no biological meaning on its own.", style: { display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: C.sub, marginRight: 14, cursor: "help" } },
+            p.fpOpts.cluster && viewRes.clusterCount ? h("div", { title: "Genes are grouped into clusters by how similar their fingerprints are across the facets. Each colour marks one cluster \u2014 it has no biological meaning on its own.", style: { display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: C.sub, marginRight: 14, cursor: "help" } },
               h("span", null, "Clusters"),
               h("div", { style: { display: "flex", gap: 3 } }, Array.from({ length: viewRes.clusterCount }).map((_, i) => h("span", { key: i, title: "Cluster " + (i + 1), style: { width: 11, height: 11, borderRadius: 3, background: this.CLUST[i % this.CLUST.length] } })))) : null,
             h("div", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: C.sub } }, p.fpOpts.mode === "direction"
@@ -953,7 +564,7 @@ class Component extends DCLogic {
               : [h("span", { key: "f", style: { width: 9, height: 9, borderRadius: "50%", background: C.ff } }), "Functional", h("span", { key: "c", style: { width: 9, height: 9, background: C.cf, transform: "rotate(45deg)", marginLeft: 10 } }), "Cellular", h("span", { key: "t", style: { width: 9, height: 9, background: C.tf, borderRadius: 2, marginLeft: 10 } }), "Tissue"])),
           h("div", { style: { flex: 1, minHeight: 0, overflow: "auto", padding: 16 } },
             res && res.rows.length ? h(this.Heatmap, { res: viewRes, mode: p.fpOpts.mode, showSig: !!p.fpOpts.showSig, onCell: (gene, facet, type) => { setOpenList(null); setCellDrawer({ gene, facet, type, lists: G.compute.cellLists(gene, facet, { dir: p.fpOpts.dir, tissues: p.fpOpts.tissues, types: p.fpOpts.types, contrasts: p.fpOpts.contrasts, restrictFf: p.fpOpts.restrictFf, restrictCf: p.fpOpts.restrictCf }) }); } })
-              : h("div", { style: { padding: 60, textAlign: "center", color: C.mut, fontSize: 13 } }, "No recognised genes. Paste HGNC symbols and build the fingerprint."))),
+              : h("div", { style: { padding: 60, textAlign: "center", color: C.mut, fontSize: 13 } }, "No recognised genes \u2014 paste HGNC symbols and build the fingerprint."))),
         // cell drawer
         cellDrawer && this.DetailDrawer({ title: cellDrawer.gene, subtitle: cellDrawer.facet, type: cellDrawer.type, onClose: () => { setCellDrawer(null); setOpenList(null); },
           body: h("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
@@ -1031,7 +642,7 @@ class Component extends DCLogic {
           railBtn(p.ctBusy ? (p.ctProgress ? Math.round((p.ctProgress.frac || 0) * 100) + "% \u00b7 " + p.ctProgress.phase : "Running\u2026") : "Run permutation test",
             () => p.runCotravel(p.ctInput, p.ctOpts), true),
           h("div", { style: { borderTop: "1px solid " + C.line2, paddingTop: 14, fontSize: 11.5, color: C.mut, lineHeight: 1.6 } },
-            "Tests which genes co-occur with the query across curated lists more than a degree-preserving null model (curveball permutation) predicts, controlling for each gene's own list-membership frequency, so promiscuous genes aren't falsely flagged. \u2731 marks q < FDR threshold.")),
+            "Tests which genes co-occur with the query across curated lists more than a degree-preserving null model (curveball permutation) predicts \u2014 controlling for each gene's own list-membership frequency, so promiscuous genes aren't falsely flagged. \u2731 marks q < FDR threshold.")),
         h("div", { style: { flex: 1, minWidth: 0, display: "flex", minHeight: 0 } },
           h("div", { style: { flex: 1, minWidth: 0, position: "relative", background: C.canvas, display: "flex", flexDirection: "column" } },
             p.ctError && h("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#b91c1c", fontSize: 13, textAlign: "center", padding: 40 } }, p.ctError),
@@ -1039,7 +650,7 @@ class Component extends DCLogic {
             p.ctBusy && h("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: C.mut, fontSize: 13 } },
               "Sampling null distribution\u2026 " + (p.ctProgress ? Math.round((p.ctProgress.frac || 0) * 100) + "% (" + p.ctProgress.phase + ")" : "")),
             !p.ctError && !p.ctBusy && res && h("div", { style: { padding: "14px 18px 0", fontSize: 12.5, color: C.sub, flex: "0 0 auto" } },
-              h("b", { style: { color: C.ink, fontFamily: "'IBM Plex Mono',monospace" } }, res.gene), res.genes.length > 1 ? " (as a set) appear" : " appears", " in ", h("b", null, res.queryDegree), " of ", h("b", null, res.nLists), " curated lists. Testing ", h("b", null, res.nGenesTested), " genes against ", res.nPermutations, " curveball permutations, ", h("b", { style: { color: C.ff } }, res.nSignificant), " significant co-traveller(s) at FDR<" + res.fdrAlpha + ".",
+              h("b", { style: { color: C.ink, fontFamily: "'IBM Plex Mono',monospace" } }, res.gene), res.genes.length > 1 ? " (as a set) appear" : " appears", " in ", h("b", null, res.queryDegree), " of ", h("b", null, res.nLists), " curated lists. Testing ", h("b", null, res.nGenesTested), " genes against ", res.nPermutations, " curveball permutations \u2014 ", h("b", { style: { color: C.ff } }, res.nSignificant), " significant co-traveller(s) at FDR<" + res.fdrAlpha + ".",
               (() => {
                 const info = G.compute.resolveInfo(p.ctInput);
                 if (!info.remapped.length) return null;
@@ -1047,7 +658,7 @@ class Component extends DCLogic {
               })(),
               res.missingGenes && res.missingGenes.length > 0 && h("div", { style: { color: "#b45309", marginTop: 4, fontSize: 11.5 } }, "Not found in any curated list, ignored: ", res.missingGenes.join(", ")),
               res.normalApproxWeak && h("div", { style: { color: "#b45309", marginTop: 4, fontSize: 11.5 } }, "Many tested genes have low expected co-occurrence; treat borderline q-values with caution."),
-              res.permutationsCapped && h("div", { style: { color: "#b45309", marginTop: 4, fontSize: 11.5 } }, "Capped to ", res.nPermutations, " permutations (from your requested count) to keep null-sample decorrelation (thin=", res.thin, ") within budget. Raise the swap budget for more permutations at this thinning.")),
+              res.permutationsCapped && h("div", { style: { color: "#b45309", marginTop: 4, fontSize: 11.5 } }, "Capped to ", res.nPermutations, " permutations (from your requested count) to keep null-sample decorrelation (thin=", res.thin, ") within budget \u2014 raise the swap budget for more permutations at this thinning.")),
             !p.ctError && !p.ctBusy && res && ctView === "table" && (sig.length
               ? h("div", { style: { flex: 1, minHeight: 0, overflowY: "auto", padding: "10px 18px 18px" } },
                   h("table", { style: { width: "100%", fontSize: 12.5, borderCollapse: "collapse" } },
@@ -1066,7 +677,7 @@ class Component extends DCLogic {
                       h("td", { style: { padding: "6px 8px", color: C.mut } }, fmtP(r.pEnrichment)),
                       h("td", { style: { padding: "6px 8px", color: C.mut } }, fmtP(r.qValue)),
                       h("td", { style: { padding: "6px 8px", color: C.mut } }, r.jaccard.toFixed(3)))))))
-              : h("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.mut, fontSize: 13, textAlign: "center", padding: 40 } }, "No significant co-travellers at this FDR threshold. Raise it, or lower min co-occurrence.")),
+              : h("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.mut, fontSize: 13, textAlign: "center", padding: 40 } }, "No significant co-travellers at this FDR threshold \u2014 raise it, or lower min co-occurrence.")),
             !p.ctError && !p.ctBusy && res && ctView === "graph" && (nodes.length > 1
               ? h("div", { style: { flex: 1, minHeight: 0, position: "relative" } },
                   h(this.ForceGraph, { kind: "cotravel", nodes, edges, colorOf, radiusOf, labelOf: n => n.gene, selectedId: ctSel && ctSel.gene,
@@ -1074,7 +685,7 @@ class Component extends DCLogic {
                   ctColorMode === "facet" && Object.keys(facetColorMap).length > 0 && h("div", { style: { position: "absolute", right: 12, top: 12, background: "rgba(255,255,255,.92)", border: "1px solid " + C.line, borderRadius: 8, padding: "9px 11px", fontSize: 11, color: C.sub, lineHeight: 1.7, pointerEvents: "none", maxWidth: 200 } },
                     h("div", { style: { fontWeight: 700, color: C.ink, marginBottom: 3, textTransform: "uppercase", letterSpacing: ".03em", fontSize: 10 } }, "Dominant facet"),
                     Object.entries(facetColorMap).map(([f, col]) => h("div", { key: f, style: { display: "flex", alignItems: "center", gap: 6 } }, h("span", { style: { width: 8, height: 8, borderRadius: "50%", background: col, flex: "0 0 auto" } }), f))))
-              : h("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.mut, fontSize: 13, textAlign: "center", padding: 40 } }, "No significant co-travellers at this FDR threshold. Raise it, or lower min co-occurrence."))),
+              : h("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.mut, fontSize: 13, textAlign: "center", padding: 40 } }, "No significant co-travellers at this FDR threshold \u2014 raise it, or lower min co-occurrence."))),
           // right panel: detail + results table
           h("div", { style: { width: 360, flex: "0 0 auto", borderLeft: "1px solid " + C.line, background: C.bg, display: "flex", flexDirection: "column", minHeight: 0 } },
             ctSel && ctSel.row && h("div", { style: { padding: 16, borderBottom: "1px solid " + C.line, maxHeight: "60%", overflowY: "auto" } },
@@ -1160,7 +771,7 @@ class Component extends DCLogic {
             o.testSignificance ? h("div", { style: { marginTop: 10 } },
               num("Permutations", o.nPermutations, v => p.setGmOpts(s => ({ ...s, nPermutations: Math.max(20, v) })), 20, 1000, 20, "Curveball permutations of the gene \u00d7 list graph. More is slower and more precise; the smallest reachable p is 1/(n+1).")) : null,
             h("div", { style: { fontSize: 10.5, color: C.mut, lineHeight: 1.5, marginTop: 6 } },
-              "Without this, cohesion and Q only describe the split. Louvain always returns communities. The null keeps every list size and every gene\u2019s list count fixed, so a low p means the members share lists more than their individual frequency explains.")),
+              "Without this, cohesion and Q only describe the split \u2014 Louvain always returns communities. The null keeps every list size and every gene\u2019s list count fixed, so a low p means the members share lists more than their individual frequency explains.")),
           railBtn(p.gmBusy ? (p.gmProgress ? Math.round((p.gmProgress.frac || 0) * 100) + "% \u00b7 " + p.gmProgress.phase : "Running\u2026") : "Find modules",
             () => p.runModules(p.gmInput, p.gmOpts), true),
           res && h("div", { style: { display: "flex", gap: 8 } },
@@ -1179,12 +790,12 @@ class Component extends DCLogic {
             h("b", null, res.nNodes), " co-occurring genes, ", h("b", null, res.nEdges), " similarity edges, ",
             h("b", { style: { color: C.cf } }, res.modules.length), " seed module", res.modules.length === 1 ? "" : "s", " \u00b7 modularity Q = ", h("b", null, res.modularity.toFixed(3)),
             res.nModulesDropped > 0 && h("span", { style: { color: C.mut } }, " \u00b7 " + res.nModulesDropped + " module" + (res.nModulesDropped === 1 ? "" : "s") + " without a seed gene hidden"),
-            res.modularity < 0.3 && h("span", { style: { color: "#b45309" } }, " (below 0.3, so the split is weak; these genes may not divide cleanly)"),
+            res.modularity < 0.3 && h("span", { style: { color: "#b45309" } }, " \u2014 below 0.3, so the split is weak; these genes may not divide cleanly"),
             res.perm
               ? h("div", { style: { marginTop: 4, fontSize: 11.5, color: C.sub } },
                   h("b", { style: { color: res.perm.nSignificant ? C.sig : C.mut } }, res.perm.nSignificant), " of ", res.modules.length,
                   " modules tighter than the degree-preserving null at BH q \u2264 " + res.perm.fdrAlpha + " (" + res.perm.nPermutations + " permutations, smallest reachable p = " + res.perm.pFloor.toFixed(4) + ")",
-                  res.perm.permutationsCapped ? h("span", { style: { color: "#b45309" } }, " (capped by the swap budget)") : null)
+                  res.perm.permutationsCapped ? h("span", { style: { color: "#b45309" } }, " \u2014 capped by the swap budget") : null)
               : h("div", { style: { marginTop: 4, fontSize: 11.5, color: C.mut } }, "Cohesion and Q describe this split; no null model was run. Turn on \u201cTest module tightness\u201d to get p-values per module."),
             (() => {
               const info = G.compute.resolveInfo(p.gmInput);
@@ -1228,7 +839,7 @@ class Component extends DCLogic {
                   gmOpen === m.id && m.backingLists.length > 0 && h("div", { style: { borderTop: "1px solid " + C.line2, paddingTop: 9, display: "flex", flexDirection: "column", gap: 5, maxHeight: 220, overflowY: "auto" } },
                     m.backingLists.map((b, i) => h("div", { key: b.gl + i, style: { display: "flex", gap: 8, alignItems: "baseline", fontSize: 11 } },
                       h("span", { style: { fontFamily: "'IBM Plex Mono',monospace", color: C.mut, flex: "0 0 auto" } }, b.nMembers),
-                      h("span", { style: { color: C.ink, flex: 1 } }, b.name, b.author ? h("span", { style: { color: C.mut } }, ", " + b.author) : null),
+                      h("span", { style: { color: C.ink, flex: 1 } }, b.name, b.author ? h("span", { style: { color: C.mut } }, " \u2014 " + b.author) : null),
                       b.pmid ? h("a", { href: b.doi || ("https://pubmed.ncbi.nlm.nih.gov/" + b.pmid), target: "_blank", rel: "noreferrer", style: { color: C.act, flex: "0 0 auto" } }, "PMID") : null)))))) 
             : h("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.mut, fontSize: 13, textAlign: "center", padding: 40 } },
                 "No modules at the current settings. Lower the minimum similarity or module size, or raise the candidate pool."))));
@@ -1242,7 +853,8 @@ class Component extends DCLogic {
       h("div", { style: { flex: 1, minHeight: 0 } },
         p.wbTab === "search" && renderSearch(),
         p.wbTab === "fingerprint" && renderFingerprint(),
-        null),
+        p.wbTab === "cotravel" && renderCotravel(),
+        p.wbTab === "modules" && renderModules()),
       toast && h("div", { style: { position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: C.act, color: "#fff", padding: "9px 18px", borderRadius: 8, fontSize: 13, zIndex: 200, animation: "gdxfade .2s" } }, toast));
   };
 
@@ -1433,9 +1045,8 @@ class Component extends DCLogic {
   };
 
   // Composite the live heatmap canvas with a title + colour legend, then download at `dpi`.
-  exportFingerprintPNG = (res, mode, dpi, opts) => {
+  exportFingerprintPNG = (res, mode, dpi) => {
     dpi = dpi || 300;
-    opts = opts || {};
     const scale = dpi / 96; // 96 CSS px per inch is the layout reference
     const hi = this._fpRenderHeatmap ? this._fpRenderHeatmap(scale) : null;
     const cv = document.getElementById("gdx-heatmap");
@@ -1458,10 +1069,9 @@ class Component extends DCLogic {
       swatches = [["Not present", "#f1f4f6"]];
       note = "Cell opacity scales with the number of lists under a facet that contain the gene (light = few, dark = many).";
     }
-    const titleHAdj = titleH + (((opts.restrictCf || []).length || (opts.restrictFf || []).length) ? 18 : 0);
     const legendH = grads ? 72 : 44;
     const W = Math.ceil(Math.max(hmW + PAD * 2, 560));
-    const Ht = Math.ceil(PAD + titleHAdj + legendH + hmH + PAD);
+    const Ht = Math.ceil(PAD + titleH + legendH + hmH + PAD);
     const comp = document.createElement("canvas");
     comp.width = Math.round(W * scale); comp.height = Math.round(Ht * scale);
     const ctx = comp.getContext("2d"); ctx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -1473,13 +1083,8 @@ class Component extends DCLogic {
     ctx.fillStyle = C.sub; ctx.font = "400 12px 'IBM Plex Sans'";
     const modeLbl = mode === "direction" ? "Up / Down" : (mode === "binary" ? "Presence" : "# Lists");
     ctx.fillText(res.rows.length + " genes \u00d7 " + (res.ffCols.length + res.cfCols.length + (res.tfCols || []).length) + " facets \u00b7 " + modeLbl + " scale", PAD, PAD + 36);
-    const limitBits = [];
-    if ((opts.restrictCf || []).length) limitBits.push("cell type: " + opts.restrictCf.join(", "));
-    if ((opts.restrictFf || []).length) limitBits.push("functional facet: " + opts.restrictFf.join(", "));
-    let subY = PAD + 36;
-    if (limitBits.length) { subY += 18; ctx.fillText("Limited to " + limitBits.join(" \u00b7 "), PAD, subY); }
     // legend
-    let ly = PAD + titleH + (limitBits.length ? 18 : 0);
+    let ly = PAD + titleH;
     ctx.textBaseline = "middle";
     if (grads) {
       grads.forEach(([lbl, rgb], i) => {
@@ -1830,7 +1435,7 @@ class Component extends DCLogic {
   NetworkModule = (p) => {
     const h = React.createElement, C = this.C, G = window.Genedex;
     const { useState, useMemo } = React;
-    const [threshold, setThreshold] = useState(1);
+    const [threshold, setThreshold] = useState(12);
     const [show, setShow] = useState({ ff: true, cf: true, cross: true });
     const [tissues, setTissues] = useState([]);
     const [tissueOpen, setTissueOpen] = useState(false);
@@ -1856,7 +1461,7 @@ class Component extends DCLogic {
         h("div", { style: { fontSize: 14, fontWeight: 600 } }, "Facets Interaction Network"),
         h("div", { style: { width: 1, height: 22, background: C.line } }),
         h("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.sub } }, "Min shared genes",
-          h("input", { type: "range", min: 1, max: 50, step: 1, value: threshold, onChange: e => setThreshold(+e.target.value), style: { width: 120, accentColor: C.ff } }),
+          h("input", { type: "range", min: 3, max: 50, step: 1, value: threshold, onChange: e => setThreshold(+e.target.value), style: { width: 120, accentColor: C.ff } }),
           h("span", { style: { fontFamily: "'IBM Plex Mono',monospace", color: C.ink, width: 24 } }, "\u2265" + threshold)),
         h("div", { style: { display: "flex", gap: 7 } }, tbtn("ff", "Functional", C.ff), tbtn("cf", "Cellular", C.cf), tbtn("cross", "Cross-type", C.blue)),
         h("div", { style: { width: 1, height: 22, background: C.line } }),
@@ -1879,7 +1484,7 @@ class Component extends DCLogic {
           net.nodes.length ? h(this.ForceGraph, { kind: "facet", nodes: net.nodes, edges: net.edges,
             colorOf: n => n.type === "ff" ? C.ff : C.cf, radiusOf: n => Math.min(10, 3 + Math.sqrt(n.size) * 0.2), labelOf: n => n.id,
             selectedId: highlightId, onNode: n => { setSel(n.id); setSharedView(null); } })
-            : h("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: C.mut, fontSize: 13 } }, "No edges at this threshold. Lower the minimum.")),
+            : h("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: C.mut, fontSize: 13 } }, "No edges at this threshold \u2014 lower the minimum.")),
         // detail
         selDetail && h("div", { style: { width: 330, flex: "0 0 auto", borderLeft: "1px solid " + C.line, background: C.bg, overflowY: "auto" } },
           h("div", { style: { padding: 16, borderBottom: "1px solid " + C.line } },
@@ -1904,36 +1509,67 @@ class Component extends DCLogic {
   //  FACET LEGEND MODAL
   // =====================================================================
   Legend = ({ C, G, h, onClose }) => {
-    const { useState } = React;
-    const [q, setQ] = useState("");
-    const ql = q.trim().toLowerCase();
-    const match = f => !ql || f.toLowerCase().includes(ql);
-    const col = (facets, type) => {
-      const shown = facets.filter(match);
-      if (!shown.length) return null;
-      return h("div", { style: { flex: 1, minWidth: 0 } },
-        h("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12 } },
-          h("span", { style: { width: 12, height: 12, borderRadius: type === "ff" ? "50%" : 2, transform: type === "cf" ? "rotate(45deg)" : "none", background: this.facetColor(type) } }),
-          h("div", { style: { fontSize: 14, fontWeight: 600, color: type === "ff" ? C.ffDark : type === "tf" ? C.tfDark : C.cfDark } }, type === "ff" ? "Functional facets (FF)" : type === "tf" ? "Tissue facets (TS)" : "Cellular facets (CF)"),
-          h("span", { style: { fontSize: 12, color: C.mut } }, shown.length + (shown.length !== facets.length ? " of " + facets.length : ""))),
-        h("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, shown.map(f => h("div", { key: f, style: { padding: "8px 10px", borderRadius: 7, background: type === "ff" ? C.ffBg : C.cfBg } },
-          h("div", { style: { color: type === "ff" ? C.ffDark : type === "tf" ? C.tfDark : C.cfDark, fontWeight: 500, fontSize: 12.5 } }, f),
-          h("div", { style: { fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.sub, marginTop: 1 } }, G.facetMeta[f].nLists + " lists \u00b7 " + G.facetMeta[f].nGenes + "g"),
-          G.facetDefs && G.facetDefs[f] && h("div", { style: { marginTop: 4, fontSize: 11.5, color: C.sub, lineHeight: 1.5, textWrap: "pretty" } }, G.facetDefs[f])))));
-    };
-    const cols = [col(G.ffFacets, "ff"), col(G.cfFacets, "cf"), col(G.tfFacets || [], "tf")].filter(Boolean);
+    const col = (facets, type) => h("div", { style: { flex: 1, minWidth: 0 } },
+      h("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12 } },
+        h("span", { style: { width: 12, height: 12, borderRadius: type === "ff" ? "50%" : 2, transform: type === "cf" ? "rotate(45deg)" : "none", background: this.facetColor(type) } }),
+        h("div", { style: { fontSize: 14, fontWeight: 600, color: type === "ff" ? C.ffDark : type === "tf" ? C.tfDark : C.cfDark } }, type === "ff" ? "Functional facets (FF)" : type === "tf" ? "Tissue facets (TS)" : "Cellular facets (CF)"),
+        h("span", { style: { fontSize: 12, color: C.mut } }, facets.length)),
+      h("div", { style: { display: "flex", flexDirection: "column", gap: 2 } }, facets.map(f => h("div", { key: f, style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 7, fontSize: 12.5, background: type === "ff" ? C.ffBg : C.cfBg } },
+        h("span", { style: { color: type === "ff" ? C.ffDark : type === "tf" ? C.tfDark : C.cfDark, fontWeight: 500 } }, f),
+        h("span", { style: { fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.sub } }, G.facetMeta[f].nLists + " lists \u00b7 " + G.facetMeta[f].nGenes + "g")))));
     return h("div", { onClick: onClose, style: { position: "fixed", inset: 0, background: "rgba(20,28,40,.42)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 30 } },
       h("div", { onClick: e => e.stopPropagation(), style: { background: C.bg, borderRadius: 14, width: "min(960px,94vw)", maxHeight: "88vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(0,0,0,.28)" } },
-        h("div", { style: { padding: "18px 24px", borderBottom: "1px solid " + C.line, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 } },
+        h("div", { style: { padding: "18px 24px", borderBottom: "1px solid " + C.line, display: "flex", justifyContent: "space-between", alignItems: "center" } },
           h("div", null, h("div", { style: { fontSize: 17, fontWeight: 600 } }, "Facet taxonomy"), h("div", { style: { fontSize: 12.5, color: C.sub, marginTop: 2 } }, "The axes by which every gene list is annotated.")),
-          h("button", { onClick: onClose, style: { border: "none", background: C.panel2, width: 32, height: 32, borderRadius: 8, fontSize: 18, color: C.sub, cursor: "pointer", flex: "0 0 auto" } }, "\u00d7")),
-        h("div", { style: { padding: "14px 24px 0" } },
-          h("input", { value: q, onChange: e => setQ(e.target.value), placeholder: "Search facets\u2026", style: {
-            width: "100%", border: "1px solid " + C.line, borderRadius: 8, padding: "9px 12px", fontSize: 13, color: C.ink, background: C.panel, outline: "none",
-          } })),
-        h("div", { style: { padding: 24, overflowY: "auto", display: "flex", gap: 28, flex: 1, minHeight: 0 } },
-          cols.length ? cols.map((c, i) => h(React.Fragment, { key: i }, i > 0 && h("div", { style: { width: 1, background: C.line } }), c))
-            : h("div", { style: { color: C.mut, fontSize: 13, padding: "20px 0" } }, "No facets match \u201c" + q + "\u201d."))));
+          h("button", { onClick: onClose, style: { border: "none", background: C.panel2, width: 32, height: 32, borderRadius: 8, fontSize: 18, color: C.sub, cursor: "pointer" } }, "\u00d7")),
+        h("div", { style: { padding: 24, overflowY: "auto", display: "flex", gap: 28 } }, col(G.ffFacets, "ff"), h("div", { style: { width: 1, background: C.line } }), col(G.cfFacets, "cf"), h("div", { style: { width: 1, background: C.line } }), col(G.tfFacets || [], "tf"))));
+  };
+
+  // =====================================================================
+  //  AI ASSISTANT (live Claude)
+  // =====================================================================
+  FRAMEWORK = "You are the Genedex Assistant, an expert guide embedded in Genedex \u2014 a context engine for Alzheimer's disease (AD) gene signatures. Genedex curates ~1,500 published AD-related gene lists, each annotated by two axes of facets: FUNCTIONAL facets (FF) describe a biological process or phenotype (e.g. Amyloid load, Tau load, Cognitive resilience, Selective vulnerability, Neuroinflammation); CELLULAR facets (CF) describe the cell type the signature was derived from (e.g. Excitatory neurons, Astrocytes, Microglia subtypes, Oligodendrocytes). Key concepts: (1) Gene Search runs a hypergeometric enrichment test of the user's genes against every curated list, with Benjamini\u2013Hochberg FDR correction \u2014 small FDR means the overlap is unlikely by chance. (2) A CONSENSUS list is the strict intersection of genes across \u22652 independent lists sharing the same facet (and optionally direction/cell-type) \u2014 a robust core signature. (3) CO-TRAVELLING genes co-occur across \u2265N facet classes \u2014 broad co-travel suggests a pleiotropic or hub gene (e.g. APOE) acting across many processes/cell types. (4) The FINGERPRINT heatmap shows, for each input gene, how many lists under each facet contain it \u2014 a gene's 'breadth' is how many facets it touches. Be concise, rigorous, and helpful; explain statistics plainly for researchers who may not be computational. When given CURRENT APP CONTEXT, ground your answer in it. Keep answers under ~180 words unless asked for more.";
+
+  AssistantDock = (props) => {
+    const h = React.createElement, C = this.C;
+    const { useState, useRef, useEffect } = React;
+    const [msgs, setMsgs] = useState([{ role: "assistant", text: "Hi \u2014 I'm the Genedex Assistant. Ask me to interpret results, explain a facet, or guide you through a module." }]);
+    const [input, setInput] = useState("");
+    const [busy, setBusy] = useState(false);
+    const scrollRef = useRef(null);
+    useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [msgs, busy, props.open]);
+
+    const send = async (q) => {
+      const text = (q != null ? q : input).trim(); if (!text || busy) return;
+      const next = [...msgs, { role: "user", text }]; setMsgs(next); setInput(""); setBusy(true);
+      try {
+        const history = next.slice(-8).map(m => (m.role === "user" ? "User: " : "Assistant: ") + m.text).join("\n");
+        const prompt = this.FRAMEWORK + "\n\n=== CURRENT APP CONTEXT ===\n" + props.context + "\n\n=== CONVERSATION ===\n" + history + "\nAssistant:";
+        let reply = "";
+        if (window.claude && window.claude.complete) reply = await window.claude.complete({ messages: [{ role: "user", content: prompt }] });
+        else reply = "(AI is unavailable in this environment.)";
+        setMsgs(m => [...m, { role: "assistant", text: (reply || "").trim() || "(no response)" }]);
+      } catch (e) { setMsgs(m => [...m, { role: "assistant", text: "Sorry \u2014 I couldn't reach the model. " + (e && e.message || "") }]); }
+      setBusy(false);
+    };
+
+    if (!props.open) return h("button", { onClick: () => props.setOpen(true), style: { position: "fixed", right: 22, bottom: 22, zIndex: 250, width: 54, height: 54, borderRadius: 16, border: "none", background: C.act, color: "#fff", cursor: "pointer", boxShadow: "0 8px 24px rgba(20,30,50,.28)", display: "flex", alignItems: "center", justifyContent: "center" } },
+      h("div", { style: { position: "relative" } }, h("div", { style: { fontSize: 20, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace" } }, "G"), h("div", { style: { position: "absolute", right: -7, top: -6, width: 9, height: 9, background: C.cf, borderRadius: "50%", border: "2px solid " + C.act } })));
+
+    return h("div", { style: { position: "fixed", right: 20, bottom: 20, top: 70, width: 380, zIndex: 250, background: C.bg, borderRadius: 16, border: "1px solid " + C.line, boxShadow: "0 16px 48px rgba(20,30,50,.22)", display: "flex", flexDirection: "column", overflow: "hidden" } },
+      h("div", { style: { padding: "13px 16px", borderBottom: "1px solid " + C.line, display: "flex", alignItems: "center", gap: 10, background: C.panel } },
+        h("div", { style: { width: 28, height: 28, borderRadius: 8, background: C.ff, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace", fontSize: 15 } }, "G"),
+        h("div", { style: { flex: 1 } }, h("div", { style: { fontSize: 13.5, fontWeight: 600 } }, "Genedex Assistant"), h("div", { style: { fontSize: 11, color: C.mut } }, busy ? "Thinking\u2026" : "Context-aware \u00b7 live")),
+        h("button", { onClick: () => setMsgs([msgs[0]]), title: "Clear chat", style: { border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 7, padding: "5px 9px", fontSize: 11, cursor: "pointer" } }, "Clear"),
+        h("button", { onClick: () => props.setOpen(false), style: { border: "none", background: "none", color: C.mut, fontSize: 18, cursor: "pointer" } }, "\u00d7")),
+      h("div", { ref: scrollRef, style: { flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10 } },
+        msgs.map((m, i) => h("div", { key: i, style: { alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%", background: m.role === "user" ? C.act : C.panel2, color: m.role === "user" ? "#fff" : C.ink, padding: "9px 12px", borderRadius: 12, fontSize: 12.8, lineHeight: 1.55, whiteSpace: "pre-wrap" } }, m.text)),
+        busy && h("div", { style: { alignSelf: "flex-start", display: "flex", gap: 4, padding: "10px 12px" } }, [0, 1, 2].map(i => h("span", { key: i, style: { width: 6, height: 6, borderRadius: "50%", background: C.mut, animation: "gdxspin 1s linear infinite", opacity: .4 + i * .2 } })))),
+      h("div", { style: { padding: 12, borderTop: "1px solid " + C.line } },
+        h("div", { onClick: () => send(props.suggestion), style: { fontSize: 11.5, color: C.ffDark, background: C.ffBg, border: "1px solid " + C.ffLine, borderRadius: 8, padding: "6px 10px", marginBottom: 8, cursor: "pointer", lineHeight: 1.4 } }, "\u2728 " + props.suggestion),
+        h("div", { style: { display: "flex", gap: 8 } },
+          h("input", { value: input, onChange: e => setInput(e.target.value), onKeyDown: e => { if (e.key === "Enter") send(); }, placeholder: "Ask about your results\u2026", style: { flex: 1, padding: "9px 12px", border: "1px solid " + C.line, borderRadius: 9, fontSize: 12.5, outline: "none", color: C.ink } }),
+          h("button", { onClick: () => send(), disabled: busy, style: { border: "none", background: busy ? C.mut : C.act, color: "#fff", borderRadius: 9, padding: "0 16px", fontSize: 13, fontWeight: 600, cursor: busy ? "default" : "pointer" } }, "Send"))));
   };
 
   // =====================================================================
@@ -2437,10 +2073,6 @@ class Component extends DCLogic {
     const matchLists = (q, limit) => { if (!sim) return []; const ql = (q || "").toLowerCase().trim(); const out = []; for (let i = 0; i < sim.ids.length; i++) { const gl = sim.ids[i]; const short = shortOf(gl); const inMeta = !!metaByGl[gl]; if (ql && !(short.toLowerCase().includes(ql) || gl.toLowerCase().includes(ql))) continue; out.push({ gl: gl, short: short, inMeta: inMeta }); if (out.length >= (limit || 8)) break; } return out; };
     const availCount = () => sim ? sim.ids.length : 0;
 
-    const exampleBtn = (which) => h("button", { onClick: () => p.loadExample(which),
-      style: { width: "100%", border: "1px dashed " + C.ffLine, background: C.ffBg, color: C.ffDark, borderRadius: 9, padding: "9px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textAlign: "left", lineHeight: 1.4 } },
-      "Try an example \u2192",
-      h("span", { style: { display: "block", fontWeight: 400, fontSize: 11, color: C.ffDark, opacity: .85, marginTop: 2 } }, p.exampleGenes.split("\n").length + " known AD genes"));
     const railLabel = (t, hint) => h("div", { style: { fontSize: 11, fontWeight: 600, color: C.sub, letterSpacing: ".03em", textTransform: "uppercase", marginBottom: 7, display: "flex", justifyContent: "space-between" } }, h("span", null, t), hint && h("span", { style: { color: C.mut, fontWeight: 500, textTransform: "none", letterSpacing: 0 } }, hint));
     const pickerResults = (q, onPick) => q && h("div", { style: { border: "1px solid " + C.line, borderRadius: 8, marginTop: 6, overflow: "hidden", background: C.bg } }, matchLists(q).map(l => h("div", { key: l.gl, onClick: () => onPick(l.gl), style: { padding: "7px 10px", fontSize: 12, cursor: "pointer", borderBottom: "1px solid " + C.line2 }, onMouseEnter: e => e.currentTarget.style.background = C.panel2, onMouseLeave: e => e.currentTarget.style.background = "transparent" }, h("div", { style: { fontWeight: 500, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, l.short), h("div", { style: { fontSize: 10.5, color: C.mut, fontFamily: "'IBM Plex Mono',monospace" } }, l.gl))), !matchLists(q).length && h("div", { style: { padding: "7px 10px", fontSize: 12, color: C.mut } }, "No matching lists with similarity data"));
     const inputStyle = { width: "100%", padding: "8px 10px", border: "1px solid " + C.line, borderRadius: 8, fontSize: 12.5, color: C.ink, background: C.bg, outline: "none" };
@@ -2562,7 +2194,7 @@ class Component extends DCLogic {
           h("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 10, color: C.mut, marginTop: 2 } }, h("span", null, "fewer"), h("span", null, "more"))),
         view === "network" && netData && h("div", { style: { display: "flex", gap: 6 } },
           [["nodes", netData.shown], ["edges", netData.edges.length], ["communities", netData.nComm]].map(([l, n]) => h("div", { key: l, style: { flex: 1, textAlign: "center", padding: "8px 4px", background: C.panel, borderRadius: 8 } }, h("div", { style: { fontSize: 16, fontWeight: 600, fontFamily: "'IBM Plex Mono',monospace", color: C.ink } }, n), h("div", { style: { fontSize: 9.5, color: C.mut, textTransform: "uppercase", letterSpacing: ".03em", marginTop: 1 } }, l)))),
-        h("div", { style: { borderTop: "1px solid " + C.line2, paddingTop: 12, fontSize: 11.5, color: C.mut, lineHeight: 1.6 } }, view === "network" ? ("Lists are linked when their expression correlation passes the threshold; communities are found by " + (netMethod === "louvain" ? "Louvain modularity optimisation" : netMethod === "fastgreedy" ? "fast-greedy (Clauset\u2013Newman\u2013Moore) modularity agglomeration" : netMethod === "labelprop" ? "label propagation" : "walktrap-style random walks + hierarchical clustering") + ", simplified JS implementations in the spirit of igraph's cluster_" + (netMethod === "louvain" ? "louvain" : netMethod === "fastgreedy" ? "fast_greedy" : netMethod === "labelprop" ? "label_prop" : "walktrap") + "(), not a literal port. " + (netData && netData.isolated ? netData.isolated + " unconnected list" + (netData.isolated === 1 ? "" : "s") + " hidden. " : "") + (netData && netData.edgesTrimmed ? "Showing the " + netData.edges.length.toLocaleString() + " strongest of " + netData.totalEdges.toLocaleString() + " links. Raise the threshold to include all. " : "") + (netData && netData.capped ? "Showing first " + NODEMAX + " of " + base.total + " lists." : "")) : (aggActive ? "Each cell is the mean correlation between two groups of lists. Click a cell to drill into those lists." : (base.total > MAXN ? ("Showing first " + MAXN + " of " + base.total + " lists.") : "Each cell is the gene-expression correlation (PathCor) between two gene lists, from 567k precomputed pairs over " + sim.n + " lists.")))),
+        h("div", { style: { borderTop: "1px solid " + C.line2, paddingTop: 12, fontSize: 11.5, color: C.mut, lineHeight: 1.6 } }, view === "network" ? ("Lists are linked when their expression correlation passes the threshold; communities are found by " + (netMethod === "louvain" ? "Louvain modularity optimisation" : netMethod === "fastgreedy" ? "fast-greedy (Clauset\u2013Newman\u2013Moore) modularity agglomeration" : netMethod === "labelprop" ? "label propagation" : "walktrap-style random walks + hierarchical clustering") + " \u2014 simplified JS implementations in the spirit of igraph's cluster_" + (netMethod === "louvain" ? "louvain" : netMethod === "fastgreedy" ? "fast_greedy" : netMethod === "labelprop" ? "label_prop" : "walktrap") + "(), not a literal port. " + (netData && netData.isolated ? netData.isolated + " unconnected list" + (netData.isolated === 1 ? "" : "s") + " hidden. " : "") + (netData && netData.edgesTrimmed ? "Showing the " + netData.edges.length.toLocaleString() + " strongest of " + netData.totalEdges.toLocaleString() + " links \u2014 raise the threshold to include all. " : "") + (netData && netData.capped ? "Showing first " + NODEMAX + " of " + base.total + " lists." : "")) : (aggActive ? "Each cell is the mean correlation between two groups of lists. Click a cell to drill into those lists." : (base.total > MAXN ? ("Showing first " + MAXN + " of " + base.total + " lists.") : "Each cell is the gene-expression correlation (PathCor) between two gene lists, from 567k precomputed pairs over " + sim.n + " lists.")))),
       // ---- main ----
       h("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: C.canvas } },
         h("div", { style: { padding: "12px 20px", borderBottom: "1px solid " + C.line, background: C.bg, display: "flex", alignItems: "center", gap: 16, flex: "0 0 auto" } },
@@ -2733,7 +2365,7 @@ class Component extends DCLogic {
             h("div", { style: { fontSize: 12.5, color: C.ink } }, h("b", null, "Current source: "), G.dataLabel || (G.synthetic ? "Demo (synthetic)" : "Uploaded"), G.dataStats ? "  \u00b7  " + G.dataStats.matched + "/" + G.dataStats.lists + " lists, " + G.dataStats.genes.toLocaleString() + " gene rows" : "")),
           // drop zone
           stage === "preview" ? h("div", { style: { border: "1px solid " + C.line, borderRadius: 12, padding: 18, background: C.panel } },
-            h("div", { style: { fontSize: 12.5, color: C.sub, marginBottom: 12 } }, "Parsed ", h("b", { style: { color: C.ink } }, label), ", ready to apply:"),
+            h("div", { style: { fontSize: 12.5, color: C.sub, marginBottom: 12 } }, "Parsed ", h("b", { style: { color: C.ink } }, label), " \u2014 ready to apply:"),
             h("div", { style: { display: "flex", gap: 10, marginBottom: 14 } }, stat(stats.matched, "lists matched", C.ff), stat(stats.genes.toLocaleString(), "gene entries"), stat(stats.unmatched, "unmatched ids", stats.unmatched ? C.cf : C.mut)),
             stats.matched === 0 && h("div", { style: { fontSize: 12, color: C.cfDark, marginBottom: 12 } }, "\u26a0 No GL ids matched the metadata. Check that filenames/ids contain GL####### codes."),
             h("div", { style: { display: "flex", gap: 10 } },
@@ -2750,9 +2382,9 @@ class Component extends DCLogic {
           // format help
           h("div", { style: { fontSize: 11.5, color: C.mut, lineHeight: 1.7, borderTop: "1px solid " + C.line2, paddingTop: 14 } },
             h("b", { style: { color: C.sub } }, "Accepted formats"), h("br"),
-            "\u2022 ", h("b", null, ".txt per list"), ": filename contains the GL id (e.g. GL0000001_*.txt), one HGNC symbol per line (a GENE_SYMBOL header is ignored).", h("br"),
-            "\u2022 ", h("b", null, ".zip"), ": a folder of those .txt files (parsed in-browser).", h("br"),
-            "\u2022 ", h("b", null, ".csv / .tsv"), ": long format with a list-id column (GL id) and a gene-symbol column; genes are grouped per list.", h("br"),
+            "\u2022 ", h("b", null, ".txt per list"), " \u2014 filename contains the GL id (e.g. GL0000001_*.txt), one HGNC symbol per line (a GENE_SYMBOL header is ignored).", h("br"),
+            "\u2022 ", h("b", null, ".zip"), " \u2014 a folder of those .txt files (parsed in-browser).", h("br"),
+            "\u2022 ", h("b", null, ".csv / .tsv"), " \u2014 long format with a list-id column (GL id) and a gene-symbol column; genes are grouped per list.", h("br"),
             "Matching is by the GL####### code, so list names beyond the id don't need to match exactly."),
           !G.synthetic && h("button", { onClick: revert, style: { alignSelf: "flex-start", border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "8px 14px", fontSize: 12, cursor: "pointer" } }, "Revert to demo data"))));
   };

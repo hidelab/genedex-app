@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Genedex</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -24,41 +23,7 @@
   ::-webkit-scrollbar-track{background:transparent}
   input,textarea,button,select{font-family:inherit}
   textarea{resize:vertical}
-  .gdx-hero-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,.78fr);gap:28px;align-items:start}
-  .gdx-hero-pad{padding:36px 32px 48px}
-  .gdx-home-banner-wrap{background:#f3f6fa;border-bottom:1px solid #e6e9ed}
-  .gdx-home-banner{display:block;width:100%;max-width:1200px;height:auto;margin:0 auto}
-  .gdx-hero-title{font-size:17px;font-weight:600;letter-spacing:-.01em;line-height:1.45;margin:0;color:#1b2129}
-  .gdx-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-  .gdx-search{position:relative;background:#fff;border:1px solid #e6e9ed;border-radius:16px;box-shadow:0 10px 28px -16px rgba(27,33,41,.28)}
-  .gdx-search:focus-within{border-color:#0d9488;box-shadow:0 0 0 3px rgba(13,148,136,.16),0 10px 28px -16px rgba(27,33,41,.28)}
-  .gdx-search-icon{position:absolute;top:16px;left:16px;color:#8b95a3;pointer-events:none}
-  .gdx-hero-input{display:block;width:100%;min-height:132px;padding:14px 44px 56px 44px;border:none;border-radius:16px;font-size:14.5px;font-family:'IBM Plex Mono',monospace;line-height:1.55;color:#1b2129;background:transparent;resize:vertical;box-shadow:none}
-  .gdx-hero-input:focus{outline:none;border:none;box-shadow:none}
-  .gdx-search-btn{position:absolute;right:12px;bottom:12px;border:none;background:#0d9488;color:#fff;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer}
-  .gdx-search-btn:hover:not(:disabled){background:#0b7d72}
-  .gdx-search-btn:disabled{opacity:.45;cursor:not-allowed}
-  .gdx-search-clear{position:absolute;top:10px;right:10px;width:28px;height:28px;border:none;background:transparent;color:#8b95a3;border-radius:8px;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center}
-  .gdx-search-clear:hover{background:#f1f4f7;color:#1b2129}
-  .gdx-search-btn:focus-visible,.gdx-search-clear:focus-visible,.gdx-hero-chip:focus-visible{outline:2px solid #0d9488;outline-offset:2px}
-  .gdx-hero-chip{border:1px solid #9fd4cc;background:#e4f3f1;color:#0b7d72;padding:7px 13px;font-size:12.5px;border-radius:999px;font-weight:600;cursor:pointer}
-  .gdx-hero-chip:hover{background:#d3ebe8}
-  .gdx-hero-card{background:#fff;border:1px solid #e6e9ed;border-radius:16px;padding:18px 18px 16px}
-  .gdx-mod-card:hover{border-color:#9fd4cc;box-shadow:0 10px 24px -14px rgba(13,148,136,.45)}
-  .gdx-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:28px}
-  .gdx-metric{background:#fafbfc;border:1px solid #eef1f4;border-radius:12px;padding:12px 12px 11px}
-  .gdx-metric-val{font-size:15px;font-weight:600;color:#1b2129;letter-spacing:-.02em;font-family:'IBM Plex Mono',monospace}
-  .gdx-metric-lab{font-size:11px;color:#8b95a3;margin-top:3px;line-height:1.3}
-  @media (max-width:840px){
-    .gdx-hero-grid{grid-template-columns:1fr;gap:18px}
-    .gdx-hero-pad{padding:32px 18px 36px}
-    .gdx-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
-  }
 </style>
-<script>
-  // Static JSON today. Later: window.GENEDEX_CONFIG = { mode: "api", apiBase: "https://…" };
-  window.GENEDEX_CONFIG = window.GENEDEX_CONFIG || { mode: "static" };
-</script>
 <script src="genedex-data.js"></script>
 </helmet>
 <div style="height:100vh;width:100vw;overflow:hidden;background:#f4f6f8;color:#1b2129">
@@ -167,46 +132,19 @@ class Component extends DCLogic {
     const [gmProgress, setGmProgress] = useState(null);
     const [gmError, setGmError] = useState(null);
 
-    const searchSeq = React.useRef(0);
-    const fpSeq = React.useRef(0);
-    const searchOptsRef = React.useRef(searchOpts);
-    const fpOptsRef = React.useRef(fpOpts);
-    searchOptsRef.current = searchOpts;
-    fpOptsRef.current = fpOpts;
-
-    const runSearch = useCallback(async (text, opts) => {
-      const seq = ++searchSeq.current;
+    const runSearch = useCallback((text, opts) => {
       const genes = G.compute.norm((text || "").split(/[\s,;]+/));
-      if (!genes.length) {
-        if (seq === searchSeq.current) setSearchRes(null);
-        return;
-      }
-      const res = await G.query.enrich(genes, { dir: (opts || searchOptsRef.current).dir });
-      if (seq === searchSeq.current) setSearchRes(res);
+      const res = G.compute.enrich(genes, { dir: opts.dir });
+      setSearchRes(res);
     }, []);
-    const runFingerprint = useCallback(async (text, opts) => {
-      const seq = ++fpSeq.current;
+    const runFingerprint = useCallback((text, opts) => {
       const genes = G.compute.norm((text || "").split(/[\s,;]+/));
-      const o = opts || fpOptsRef.current;
-      if (!genes.length) {
-        if (seq === fpSeq.current) setFpRes(null);
-        return;
-      }
-      const res = await G.query.fingerprint(genes, { dir: o.dir, unit: o.unit, tissues: o.tissues, types: o.types, contrasts: o.contrasts, restrictFf: o.restrictFf, restrictCf: o.restrictCf });
-      if (seq === fpSeq.current) setFpRes(res);
+      setFpRes(G.compute.fingerprint(genes, { dir: opts.dir, unit: opts.unit, tissues: opts.tissues, types: opts.types, contrasts: opts.contrasts, restrictFf: opts.restrictFf, restrictCf: opts.restrictCf }));
     }, []);
-    React.useEffect(() => {
-      const t = setTimeout(() => runSearch(searchInput, searchOptsRef.current), 220);
-      return () => clearTimeout(t);
-    }, [searchInput, searchOpts.dir, runSearch]);
-    React.useEffect(() => {
-      const t = setTimeout(() => runFingerprint(fpInput, fpOptsRef.current), 220);
-      return () => clearTimeout(t);
-    }, [fpInput, runFingerprint]);
     const runCotravel = useCallback(async (gene, opts) => {
       setCtBusy(true); setCtError(null); setCtProgress({ phase: "starting", frac: 0 });
       try {
-        const res = await G.query.cotravelTest(gene, opts, p => setCtProgress(p));
+        const res = await G.compute.cotravelTest(gene, opts, p => setCtProgress(p));
         setCtRes(res);
       } catch (e) {
         setCtError(e.message || String(e)); setCtRes(null);
@@ -220,7 +158,7 @@ class Component extends DCLogic {
       setGmBusy(true); setGmError(null); setGmProgress({ phase: "starting", frac: 0 });
       try {
         const o = { ...opts, nPermutations: opts.testSignificance ? (opts.nPermutations || 200) : 0 };
-        setGmRes(await G.query.geneModules(genes, o, pr => setGmProgress(pr)));
+        setGmRes(await G.compute.geneModules(genes, o, pr => setGmProgress(pr)));
       } catch (e) {
         setGmError(e.message || String(e)); setGmRes(null);
       } finally {
@@ -233,20 +171,7 @@ class Component extends DCLogic {
       else { setSearchInput(DEFAULT); runSearch(DEFAULT, searchOpts); }
     };
 
-    const analyzeFromHome = async (text) => {
-      const genes = G.compute.norm(String(text || "").split(/[\s,;]+/));
-      if (!genes.length) return [];
-      const asLines = genes.join("\n");
-      setSearchInput(asLines);
-      setFpInput(asLines);
-      await runSearch(asLines, searchOpts);
-      await runFingerprint(asLines, fpOpts);
-      setTab("workbench");
-      setWbTab("search");
-      return genes;
-    };
-
-    const pushToFingerprint = async (genes) => { setFpInput(genes.join("\n")); setFpRes(await G.query.fingerprint(genes, { dir: fpOpts.dir, unit: fpOpts.unit, tissues: fpOpts.tissues, types: fpOpts.types, contrasts: fpOpts.contrasts, restrictFf: fpOpts.restrictFf, restrictCf: fpOpts.restrictCf })); setTab("workbench"); setWbTab("fingerprint"); };
+    const pushToFingerprint = (genes) => { setFpInput(genes.join("\n")); setFpRes(G.compute.fingerprint(genes, { dir: fpOpts.dir, unit: fpOpts.unit, tissues: fpOpts.tissues, types: fpOpts.types, contrasts: fpOpts.contrasts, restrictFf: fpOpts.restrictFf, restrictCf: fpOpts.restrictCf })); setTab("workbench"); setWbTab("fingerprint"); };
     const pushToCotravel = (genes) => { if (!genes || !genes.length) return; const q = genes.join(", "); setCtInput(q); runCotravel(q, ctOpts); setTab("workbench"); setWbTab("cotravel"); };
     const pushToModules = (genes) => { if (!genes || !genes.length) return; const q = genes.join(", "); setGmInput(q); runModules(q, gmOpts); setTab("workbench"); setWbTab("modules"); };
     const saveList = (name, genes) => setSessionLists(l => [...l.filter(x => x.name.toLowerCase() !== name.toLowerCase()), { name, genes }]);
@@ -258,7 +183,7 @@ class Component extends DCLogic {
       fpInput, setFpInput, fpRes, fpOpts, setFpOpts, runFingerprint,
       ctInput, setCtInput, ctRes, ctOpts, setCtOpts, runCotravel, ctBusy, ctProgress, ctError,
       gmInput, setGmInput, gmRes, gmOpts, setGmOpts, runModules, gmBusy, gmProgress, gmError,
-      pushToFingerprint, pushToCotravel, pushToModules, setLegendOpen, exampleGenes: DEFAULT, loadExample, analyzeFromHome };
+      pushToFingerprint, pushToCotravel, pushToModules, setLegendOpen, exampleGenes: DEFAULT, loadExample };
 
     return h("div", { style: { height: "100vh", display: "flex", flexDirection: "column", background: C.canvas } },
       h(this.NavBar, { key: "nav-" + tab, ...shared, legendOpen, setLegendOpen, devMode, setDevOpen }),
@@ -266,7 +191,7 @@ class Component extends DCLogic {
         tab === "network" ? h(this.NetworkModule, { key: "network", ...shared })
           : tab === "docs" ? h(this.DocsModule, { key: "docs", ...shared })
           : tab === "about" ? h(this.AboutModule, { key: "about", ...shared })
-          : tab === "download" ? h(this.DownloadModule, { key: "download", ...shared })
+          : tab === "similarity" ? h(this.SimilarityModule, { key: "similarity", ...shared })
           : tab === "home" ? h(this.HomeModule, { key: "home", ...shared })
           : h(this.Workbench, { key: "workbench", ...shared }),
       ),
@@ -360,8 +285,17 @@ class Component extends DCLogic {
         h(FIG, { src: "docs/facets-network.png", caption: "Facets Network at its default threshold. Teal circles are functional facets, amber diamonds cellular ones; node size tracks how many lists carry the facet. Raise Min shared genes to thin the edges, or scroll to zoom into a region." }),
         h("p", { style: { margin: 0, color: C.sub, fontSize: 13.5 } }, "Edge threshold and significance controls set how much shared membership is needed before two facets are drawn as connected; community detection groups the facets that hang together.")),
 
+      h(S, { key: "sim", kicker: "Module", title: "Similarity Matrix", accent: C.cf },
+        h("p", { style: { margin: 0 } }, "Work in progress."),
+        h(DL, { items: [
+          ["Neighbours", "How many associated lists to pull in around the anchor."],
+          ["Min |correlation|", "Floor on the strength of association, applied in both matrix and network views."],
+          ["Group by / Order / Linkage", "Arrange rows by facet, tissue or hierarchical clustering to make blocks of related studies visible."],
+          ["View", "Matrix for the full grid; Network for the same relationships as a graph."]
+        ] })),
+
       h(S, { key: "lists", kicker: "Workspace", title: "My Lists", accent: C.ink },
-        h("p", { style: { margin: 0 } }, "Any gene set you paste or derive can be saved to My Lists for the session and reloaded into another module, so one result can be carried across Search and Fingerprint without retyping.")),
+        h("p", { style: { margin: 0 } }, "Any gene set you paste or derive can be saved to My Lists for the session and reloaded into another module, so one result can be carried across Search, Fingerprint and Similarity without retyping.")),
 
     ]);
   };
@@ -400,49 +334,11 @@ class Component extends DCLogic {
   };
 
   // =====================================================================
-  //  DOWNLOAD
-  // =====================================================================
-  DownloadModule = (p) => {
-    const h = React.createElement, C = this.C, G = window.Genedex;
-    const base = (G.config && G.config.staticBase) || "data/";
-    const files = [
-      { file: "genedex-meta.json", title: "List metadata", desc: "Study, facets, tissue, and direction for each curated gene list.", size: "1.5 MB" },
-      { file: "genedex-members.json", title: "Gene memberships", desc: "HGNC symbols belonging to each list (list ID \u2192 gene array).", size: "4.0 MB" },
-      { file: "facet-definitions.json", title: "Facet definitions", desc: "Plain-language descriptions of functional, cellular, and tissue facets.", size: "57 KB" },
-      { file: "gene-aliases.json", title: "Gene aliases", desc: "Symbol remapping onto the curated HGNC universe.", size: "1.0 MB" },
-    ];
-    return h(this.Page, {
-      title: "Download",
-      lead: "The collection used by Genedex is available as JSON. These are the same files the site loads in the browser."
-    }, [
-      h("div", { key: "files", style: { display: "flex", flexDirection: "column", gap: 10 } },
-        files.map(f => h("a", {
-          key: f.file,
-          href: base + f.file,
-          download: f.file,
-          className: "gdx-mod-card",
-          style: {
-            display: "flex", alignItems: "center", gap: 16, textDecoration: "none",
-            border: "1px solid " + C.line, background: C.bg, borderRadius: 12, padding: "16px 18px",
-            transition: "border-color .15s, box-shadow .15s",
-          },
-        },
-          h("div", { style: { flex: 1, minWidth: 0 } },
-            h("div", { style: { fontSize: 15, fontWeight: 600, color: C.ink } }, f.title),
-            h("div", { style: { fontSize: 13, color: C.sub, lineHeight: 1.5, marginTop: 4 } }, f.desc),
-            h("div", { style: { fontSize: 12, color: C.mut, fontFamily: "'IBM Plex Mono',monospace", marginTop: 6 } }, f.file)),
-          h("div", { style: { flex: "0 0 auto", textAlign: "right" } },
-            h("div", { style: { fontSize: 11, fontWeight: 600, color: C.ffDark, background: C.ffBg, border: "1px solid " + C.ffLine, borderRadius: 999, padding: "6px 12px" } }, "Download"),
-            h("div", { style: { fontSize: 11, color: C.mut, marginTop: 6 } }, f.size))))),
-    ]);
-  };
-
-  // =====================================================================
   //  NAV BAR
   // =====================================================================
   NavBar = (p) => {
     const h = React.createElement, C = this.C, G = window.Genedex;
-    const tabs = [["home", "Home"], ["workbench", "Gene Workbench"], ["network", "Facets Network"], ["download", "Download"], ["docs", "Documentation"], ["about", "About"]];
+    const tabs = [["home", "Home"], ["workbench", "Gene Workbench"], ["network", "Facets Network"], ["similarity", "Similarity Matrix"], ["docs", "Documentation"], ["about", "About"]];
     const tabBtn = ([id, label]) => h("button", {
       key: id, onClick: () => p.setTab(id),
       style: { border: "none", background: p.tab === id ? C.bg : "transparent", color: p.tab === id ? C.ink : C.sub,
@@ -459,16 +355,25 @@ class Component extends DCLogic {
         h("div", { style: { fontSize: 18, fontWeight: 600, letterSpacing: "-.02em" } }, "Genedex"),
       ),
       // tabs
-      h("nav", { "aria-label": "Primary", style: { display: "flex", gap: 4, background: C.panel2, padding: 4, borderRadius: 10, marginLeft: 8 } }, tabs.map(tabBtn)),
+      h("nav", { style: { display: "flex", gap: 4, background: C.panel2, padding: 4, borderRadius: 10, marginLeft: 8 } }, tabs.map(tabBtn)),
       h("div", { style: { flex: 1 } }),
+      // stats
+      h("div", { style: { display: "flex", alignItems: "center", gap: 16, fontSize: 12, color: C.sub, minWidth: 0 } },
+        h("div", null, h("b", { style: { color: C.ink, fontFamily: "'IBM Plex Mono',monospace" } }, G.lists.length.toLocaleString()), " lists"),
+        h("div", null, h("b", { style: { color: C.ink, fontFamily: "'IBM Plex Mono',monospace" } }, G.universe.length.toLocaleString()), " genes"),
+        h("div", { style: { display: "grid", gridTemplateColumns: "auto auto", columnGap: 12, rowGap: 1, fontSize: 11, lineHeight: 1.35, flex: "0 0 auto" } },
+          h("span", { style: { color: C.ff, fontWeight: 600, whiteSpace: "nowrap" } }, G.ffFacets.length + " functional facets"),
+          h("span", { style: { color: C.cf, fontWeight: 600, whiteSpace: "nowrap" } }, G.cfFacets.length + " cellular facets"),
+          h("span", { style: { color: C.tf, fontWeight: 600, whiteSpace: "nowrap" } }, (G.tfFacets || []).length + " tissue facets"))),
       window.Genedex.synthetic && h("div", { title: "Gene memberships are placeholder/synthetic. Upload the per-list .txt files to load real gene members.", style: { display: "flex", alignItems: "center", gap: 5, background: C.cfBg, color: C.cfDark, border: "1px solid " + C.cfLine, borderRadius: 20, padding: "3px 9px", fontSize: 10.5, fontWeight: 600, letterSpacing: ".02em", cursor: "help" } }, h("span", { style: { width: 6, height: 6, borderRadius: "50%", background: C.cf } }), "DEMO DATA"),
       h("div", { style: { width: 1, height: 24, background: C.line } }),
       // dev data loader (developers only)
       p.devMode && h("button", { onClick: () => p.setDevOpen(true), title: "Developer: load real gene-list data (Alt+Shift+D)",
         style: { display: "flex", alignItems: "center", gap: 6, border: "1px solid " + C.line, background: C.panel, color: C.sub, borderRadius: 8, padding: "7px 11px", fontSize: 12.5, fontWeight: 500, cursor: "pointer" } },
         h("span", { style: { fontSize: 13 } }, "\u2699"), "Data"),
+      // my lists
       h("button", { onClick: () => p.setLegendOpen(true), title: "Facet taxonomy",
-        style: { border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "7px 12px", fontSize: 12.5, fontWeight: 500, cursor: "pointer" } }, "Facet Legend"),
+        style: { border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "7px 12px", fontSize: 12.5, fontWeight: 500, cursor: "pointer" } }, "Facet legend"),
       h("div", { style: { display: "flex", alignItems: "center", gap: 7, border: "1px solid " + C.line, borderRadius: 8, padding: "6px 11px", fontSize: 12.5, color: C.sub } },
         h("span", null, "My Lists"),
         h("span", { style: { background: p.sessionLists.length ? C.ff : C.panel2, color: p.sessionLists.length ? "#fff" : C.mut, borderRadius: 20, minWidth: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, padding: "0 5px" } }, p.sessionLists.length)),
@@ -480,129 +385,42 @@ class Component extends DCLogic {
   // =====================================================================
   HomeModule = (p) => {
     const h = React.createElement, C = this.C, G = window.Genedex;
-    const { useState } = React;
-    const [busy, setBusy] = useState(false);
-    const draft = p.searchInput || "";
-    const info = G.compute.resolveInfo(draft);
-    const parsed = info.genes;
-    const presets = [
-      { id: "microglia", label: "Microglia Markers", genes: ["CX3CR1", "P2RY12", "AIF1", "CSF1R", "TREM2", "ITGAM", "C1QA", "TMEM119", "TYROBP", "CD68"] },
-      { id: "dna", label: "DNA Repair", genes: ["TP53", "BRCA1", "ATM", "PARP1", "XRCC1", "ERCC2", "MLH1", "MSH2", "EGFR", "APEX1"] },
-      { id: "a1", label: "A1 Astrocytes", genes: ["C3", "GFAP", "SERPING1", "CXCL10", "GBP2", "PSMB8", "FKBP5", "SRGN", "AMIGO2", "FBLN5"] },
-      { id: "resilience", label: "Cognitive Resilience", genes: ["BDNF", "NRN1", "RBFOX1", "VGF", "NPTX2", "RELN", "NRGN", "GAP43", "CALB1", "FOXO3"] },
-    ];
-    const floorPlus = (n, step) => n >= step ? (Math.floor(n / step) * step).toLocaleString() + "+" : n.toLocaleString();
-    const nFacets = G.ffFacets.length + G.cfFacets.length + (G.tfFacets || []).length;
-    const metrics = [
-      { value: G.lists.length.toLocaleString(), label: "Curated Lists" },
-      { value: floorPlus(G.universe.length, 100), label: "Genes" },
-      { value: floorPlus(nFacets, 10), label: "Curated Facets" },
-      { value: "Multi-cohort", label: "Human Brain" },
-    ];
     const cards = [
+      { tag: "Search", title: "Gene Search", desc: "Test a gene set against every facet for enrichment, with direction and significance.", accent: C.ff, accentBg: C.ffBg, go: () => { p.setTab("workbench"); p.setWbTab("search"); } },
       { tag: "Profile", title: "Gene Fingerprint", desc: "Profile a gene set across facets and reference lists at once.", accent: C.cf, accentBg: C.cfBg, go: () => { p.setTab("workbench"); p.setWbTab("fingerprint"); } },
       { tag: "Explore", title: "Facets Network", desc: "See how facets relate to each other by the genes they share.", accent: C.tf, accentBg: C.tfBg, go: () => p.setTab("network") },
+      { tag: "Compare", title: "Similarity Matrix", desc: "Compare curated gene lists pairwise by overlap.", accent: C.blue, accentBg: C.blueBg, go: () => p.setTab("similarity") },
     ];
-
-    const runAnalyze = async (text) => {
-      const genes = G.compute.norm(String(text || "").split(/[\s,;]+/));
-      if (!genes.length || busy) return;
-      setBusy(true);
-      try { await p.analyzeFromHome(text); }
-      finally { setBusy(false); }
-    };
-    const applyPreset = (preset) => {
-      const text = preset.genes.join("\n");
-      p.setSearchInput(text);
-      runAnalyze(text);
-    };
-
     return h("div", { style: { height: "100%", overflowY: "auto", background: C.canvas } },
-      h("div", { className: "gdx-home-banner-wrap" },
-        h("img", {
-          className: "gdx-home-banner",
-          src: "./images/banner.png",
-          alt: "The Genedex discovery platform: paste a query gene list, search curated Alzheimer\u2019s disease signatures, and get ranked gene search results.",
-        })),
-      h("section", { "aria-labelledby": "gdx-hero-title", style: { position: "relative", overflow: "hidden", background: C.bg, borderBottom: "1px solid " + C.line } },
-        h("div", { className: "gdx-hero-pad", style: { position: "relative", maxWidth: 1080, margin: "0 auto" } },
-          h("div", { className: "gdx-hero-grid" },
-            h("div", null,
-              h("h1", { id: "gdx-hero-title", className: "gdx-hero-title" }, "Input your gene sets"),
-              h("form", {
-                onSubmit: (e) => { e.preventDefault(); runAnalyze(draft); },
-                "aria-label": "Gene Search",
-                style: { marginTop: 22 },
-              },
-                h("label", { htmlFor: "gdx-hero-genes", className: "gdx-sr-only" }, "Gene symbols"),
-                h("div", { className: "gdx-search" },
-                  h("svg", { className: "gdx-search-icon", viewBox: "0 0 24 24", width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
-                    h("circle", { cx: 11, cy: 11, r: 7 }),
-                    h("path", { d: "M20 20l-3.5-3.5" })),
-                  h("textarea", {
-                    id: "gdx-hero-genes",
-                    className: "gdx-hero-input",
-                    value: draft,
-                    onChange: (e) => p.setSearchInput(e.target.value),
-                    onKeyDown: (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); runAnalyze(draft); } },
-                    placeholder: "Enter gene symbols separated by commas, spaces, or lines (e.g., TP53, BRCA1, EGFR)\u2026",
-                    autoComplete: "off",
-                    spellCheck: false,
-                    "aria-describedby": "gdx-hero-hint gdx-hero-count",
-                  }),
-                  h("button", {
-                    type: "submit",
-                    className: "gdx-search-btn",
-                    disabled: busy || !parsed.length,
-                    "aria-busy": busy ? "true" : "false",
-                  }, busy ? "Searching\u2026" : "Search"),
-                  draft.trim() && h("button", {
-                    type: "button",
-                    className: "gdx-search-clear",
-                    "aria-label": "Clear gene list",
-                    title: "Clear",
-                    onClick: () => { p.setSearchInput(""); p.setFpInput(""); p.setSearchRes(null); },
-                  }, "\u00d7")),
-                h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginTop: 8, flexWrap: "wrap" } },
-                  h("p", { id: "gdx-hero-hint", style: { margin: 0, fontSize: 12.5, color: C.mut, lineHeight: 1.45 } }, "Whitespace is trimmed, symbols are uppercased, and aliases are remapped to HGNC."),
-                  h("p", { id: "gdx-hero-count", "aria-live": "polite", style: { margin: 0, fontSize: 12.5, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, color: parsed.length ? C.ffDark : C.mut } },
-                    parsed.length ? (parsed.length + " gene" + (parsed.length === 1 ? "" : "s")) : "No genes yet")),
-                info.remapped.length ? h("div", { style: { marginTop: 8 } }, h(this.RemappedGenes, { pairs: info.remapped })) : null,
-                info.missing.length ? h("div", { style: { marginTop: 8 } }, h(this.MissingGenes, { genes: info.missing, kicker: "not in Genedex" })) : null,
-                h("div", { style: { marginTop: 16 } },
-                  h("div", { id: "gdx-hero-examples-label", style: { fontSize: 12, fontWeight: 600, color: C.sub, marginBottom: 8 } }, "Try an example"),
-                  h("div", { role: "group", "aria-labelledby": "gdx-hero-examples-label", style: { display: "flex", flexWrap: "wrap", gap: 8 } },
-                    presets.map((preset) => h("button", {
-                      key: preset.id,
-                      type: "button",
-                      className: "gdx-hero-chip",
-                      onClick: () => applyPreset(preset),
-                      title: "Load " + preset.label + " (" + preset.genes.length + " genes) and run Gene Search",
-                      "aria-label": "Try " + preset.label + ": " + preset.genes.join(", "),
-                    }, preset.label)))),
-              )),
-            h("aside", { className: "gdx-hero-card", "aria-labelledby": "gdx-modules-title", style: { marginTop: 8 } },
-              h("h2", { id: "gdx-modules-title", style: { margin: 0, fontSize: 15, fontWeight: 600, color: C.sub, letterSpacing: "-.01em" } }, "Or jump into a module"),
-              h("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginTop: 14 } },
-                cards.map(c => h("button", { key: c.title, type: "button", className: "gdx-mod-card", onClick: c.go, style: {
-                  textAlign: "left", cursor: "pointer", border: "1px solid " + C.line, background: C.bg, borderRadius: 12,
-                  padding: "14px 14px 15px", display: "flex", flexDirection: "column", gap: 6, position: "relative", overflow: "hidden",
-                  transition: "border-color .15s, box-shadow .15s",
-                } },
-                  h("div", { style: {
-                    position: "absolute", top: 0, right: 0, fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
-                    color: c.accent, background: c.accentBg, padding: "4px 9px", borderBottomLeftRadius: 10,
-                  } }, c.tag),
-                  h("div", { style: { fontSize: 15, fontWeight: 600, color: C.ink, marginTop: 4, paddingRight: 72 } }, c.title),
-                  h("div", { style: { fontSize: 12.5, color: C.sub, lineHeight: 1.5, textWrap: "pretty" } }, c.desc),
-                )),
-              ),
-            ),
-          ),
-          h("div", { className: "gdx-metrics", role: "list", "aria-label": "Collection size" },
-            metrics.map(m => h("div", { key: m.label, className: "gdx-metric", role: "listitem" },
-              h("div", { className: "gdx-metric-val" }, m.value),
-              h("div", { className: "gdx-metric-lab" }, m.label)))),
+      h("div", { style: { position: "relative", overflow: "hidden", borderBottom: "1px solid " + C.line } },
+        h("div", { "aria-hidden": true, style: {
+          position: "absolute", top: -110, right: -50, fontSize: 460, fontWeight: 700, lineHeight: 1,
+          fontFamily: "'IBM Plex Mono',monospace", color: C.ink, opacity: 0.035, userSelect: "none", pointerEvents: "none",
+        } }, "G"),
+        h("div", { style: { position: "relative", maxWidth: 900, margin: "0 auto", padding: "68px 32px 56px" } },
+          h("div", { style: { fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: C.mut, marginBottom: 14 } }, "AD gene-list index"),
+          h("h1", { style: { margin: 0, fontSize: 40, fontWeight: 600, letterSpacing: "-.02em", color: C.ink, lineHeight: 1.1 } }, "Genedex"),
+          h("div", { style: { marginTop: 18, fontSize: 25, fontWeight: 600, letterSpacing: "-.01em", color: C.ink, lineHeight: 1.3, maxWidth: 640, textWrap: "pretty" } },
+            "A platform to ", h("span", { style: { color: C.ff } }, "unify"), " AD gene signatures."),
+          h("p", { style: { marginTop: 14, marginBottom: 0, fontSize: 15.5, lineHeight: 1.65, color: C.sub, maxWidth: 580, textWrap: "pretty" } },
+            "Genedex indexes gene lists reported across a collection of curated and annotated Alzheimer's disease studies. Bring a gene set and see how it lines up against what's already been reported."),
+        )),
+      h("div", { style: { maxWidth: 900, margin: "0 auto", padding: "40px 32px 80px" } },
+        h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 16 } },
+          cards.map(c => h("button", { key: c.title, onClick: c.go, style: {
+            textAlign: "left", cursor: "pointer", border: "1px solid " + C.line, background: C.bg, borderRadius: 14,
+            padding: "22px 20px 24px", display: "flex", flexDirection: "column", gap: 10, position: "relative", overflow: "hidden",
+            transition: "border-color .15s, box-shadow .15s",
+          }, "style-hover": {
+            borderColor: c.accent, boxShadow: "0 10px 26px -12px " + c.accent + "55",
+          } },
+            h("div", { style: {
+              position: "absolute", top: 0, right: 0, fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
+              color: c.accent, background: c.accentBg, padding: "5px 11px", borderBottomLeftRadius: 10,
+            } }, c.tag),
+            h("div", { style: { fontSize: 16, fontWeight: 600, color: C.ink, marginTop: 6 } }, c.title),
+            h("div", { style: { fontSize: 13, color: C.sub, lineHeight: 1.5, textWrap: "pretty" } }, c.desc),
+          )),
         ),
       ));
   };
@@ -617,25 +435,6 @@ class Component extends DCLogic {
         borderRadius: 6, padding: "2px 7px", fontSize: 11, fontWeight: 500, whiteSpace: "nowrap", cursor: onClick ? "pointer" : "default", lineHeight: 1.5 } },
       h("span", { style: { width: 5, height: 5, borderRadius: ff ? "50%" : tf ? 2 : 1, background: ff ? C.ff : tf ? C.tf : C.cf, transform: ff || tf ? "none" : "rotate(45deg)", flex: "0 0 auto" } }),
       name);
-  };
-
-  MissingGenes = ({ genes, kicker }) => {
-    const h = React.createElement;
-    if (!genes || !genes.length) return null;
-    return h("div", { role: "status", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 } },
-      h("span", { style: { fontSize: 11.5, fontWeight: 600, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "3px 8px", whiteSpace: "nowrap" } },
-        genes.length + " " + (kicker || "not found in any list")),
-      genes.map(g => h("span", { key: g, style: { fontFamily: "'IBM Plex Mono',monospace", fontSize: 11.5, color: "#b91c1c", background: "#fff", border: "1px solid #fecaca", borderRadius: 5, padding: "2px 7px" } }, g)));
-  };
-
-  RemappedGenes = ({ pairs }) => {
-    const h = React.createElement, C = this.C;
-    if (!pairs || !pairs.length) return null;
-    return h("div", { role: "status", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 } },
-      h("span", { style: { fontSize: 11.5, fontWeight: 600, color: C.ffDark, background: C.ffBg, border: "1px solid " + C.ffLine, borderRadius: 6, padding: "3px 8px", whiteSpace: "nowrap" } },
-        pairs.length + " alias" + (pairs.length > 1 ? "es" : "") + " remapped"),
-      pairs.map(([from, to]) => h("span", { key: from + "\u2192" + to, style: { fontFamily: "'IBM Plex Mono',monospace", fontSize: 11.5, color: C.ink, background: "#fff", border: "1px solid " + C.ffLine, borderRadius: 5, padding: "2px 7px" } },
-        from, h("span", { style: { color: C.mut, margin: "0 5px" } }, "\u2192"), to)));
   };
 
   Seg = ({ value, onChange, options, accent }) => {
@@ -703,7 +502,7 @@ class Component extends DCLogic {
       const sort = p.searchOpts.sort;
       rows = rows.slice().sort((a, b) => sort === "overlap" ? b.nOverlap - a.nOverlap : sort === "p" ? a.p - b.p : a.fdr - b.fdr || b.nOverlap - a.nOverlap);
       const total = rows.length; rows = rows.slice(0, 250);
-      const sig = rows0.filter(r => r.fdr <= p.searchOpts.fdr).length;
+      const sig = rows0.filter(r => r.fdr < 0.05).length;
 
       const th = (label, key, w) => h("th", { onClick: key ? () => p.setSearchOpts(o => ({ ...o, sort: key })) : null,
         style: { textAlign: key === "name" || key === "facets" ? "left" : "right", padding: "8px 10px", fontSize: 10.5, fontWeight: 600, color: sort === key ? C.ink : C.mut, textTransform: "uppercase", letterSpacing: ".03em", cursor: key && key !== "name" && key !== "facets" ? "pointer" : "default", whiteSpace: "nowrap", width: w, position: "sticky", top: 0, background: C.panel, borderBottom: "1px solid " + C.line, userSelect: "none" } }, label, sort === key ? " \u2193" : "");
@@ -724,24 +523,24 @@ class Component extends DCLogic {
         // main
         h("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column" } },
           // summary banner
-          res && (() => {
-            const info = G.compute.resolveInfo(p.searchInput);
-            const nMatched = info.found.length;
-            const nLists = res.rows.length;
-            return h("div", { style: { borderBottom: "1px solid " + C.line, flex: "0 0 auto", background: C.bg } },
-              h("div", { style: { padding: (info.missing.length || info.remapped.length) ? "14px 20px 8px" : "14px 20px", display: "flex", alignItems: "center", gap: 20 } },
-                h("div", { style: { fontSize: 14 } }, h("b", { style: { fontFamily: "'IBM Plex Mono',monospace" } }, nMatched), nMatched === 1 ? " gene matched across " : " genes matched across ", h("b", { style: { fontFamily: "'IBM Plex Mono',monospace" } }, nLists), nLists === 1 ? " gene list" : " gene lists"),
-                h("div", { style: { flex: 1 } }),
-                h("div", { style: { display: "flex", alignItems: "center", gap: 14 } },
-                  h("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.sub } }, "FDR \u2264",
-                    h("input", { type: "range", min: 0, max: 1, step: 0.01, value: p.searchOpts.fdr, onChange: e => p.setSearchOpts(o => ({ ...o, fdr: +e.target.value })), style: { width: 90, accentColor: C.ff } }),
-                    h("span", { style: { fontFamily: "'IBM Plex Mono',monospace", width: 34, color: C.ink } }, p.searchOpts.fdr.toFixed(2)),
-                    h("span", { style: { color: C.sig, fontWeight: 600, whiteSpace: "nowrap" } }, "(" + sig + " significant)")),
-                  h("input", { value: p.searchOpts.facet, onChange: e => p.setSearchOpts(o => ({ ...o, facet: e.target.value })), placeholder: "Filter facet\u2026", style: { width: 130, padding: "6px 9px", border: "1px solid " + C.line, borderRadius: 7, fontSize: 12, outline: "none", color: C.ink } }))),
-              (info.remapped.length || info.missing.length) ? h("div", { style: { padding: "0 20px 12px", display: "flex", flexDirection: "column", gap: 8 } },
-                info.remapped.length ? h(this.RemappedGenes, { pairs: info.remapped }) : null,
-                info.missing.length ? h(this.MissingGenes, { genes: info.missing }) : null) : null);
-          })(),
+          res && h("div", { style: { padding: "14px 20px", borderBottom: "1px solid " + C.line, display: "flex", alignItems: "center", gap: 20, flex: "0 0 auto", background: C.bg } },
+            h("div", { style: { fontSize: 14 } }, h("b", { style: { fontFamily: "'IBM Plex Mono',monospace" } }, res.nInput), " genes matched across ", h("b", { style: { fontFamily: "'IBM Plex Mono',monospace" } }, res.rows.length), " gene lists ",
+              h("span", { style: { color: C.sig, fontWeight: 600 } }, "(" + sig + " significant at FDR < 0.05)")),
+            res && (() => {
+              const info = G.compute.resolveInfo(p.searchInput);
+              if (!info.remapped.length && !info.missing.length) return null;
+              const bits = [];
+              if (info.remapped.length) bits.push(info.remapped.length + " alias" + (info.remapped.length > 1 ? "es" : "") + " remapped");
+              if (info.missing.length) bits.push(info.missing.length + " not in any list");
+              return h("div", { title: (info.remapped.length ? "Remapped: " + info.remapped.map(x => x[0] + " \u2192 " + x[1]).join(", ") + ". " : "") + (info.missing.length ? "Not found: " + info.missing.join(", ") : ""), style: { fontSize: 11.5, color: C.mut, border: "1px solid " + C.line, borderRadius: 6, padding: "3px 8px", cursor: "help" } }, bits.join(" \u00b7 "));
+            })(),
+            h("div", { style: { flex: 1 } }),
+            // filters
+            h("div", { style: { display: "flex", alignItems: "center", gap: 14 } },
+              h("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.sub } }, "FDR \u2264",
+                h("input", { type: "range", min: 0, max: 1, step: 0.01, value: p.searchOpts.fdr, onChange: e => p.setSearchOpts(o => ({ ...o, fdr: +e.target.value })), style: { width: 90, accentColor: C.ff } }),
+                h("span", { style: { fontFamily: "'IBM Plex Mono',monospace", width: 34, color: C.ink } }, p.searchOpts.fdr.toFixed(2))),
+              h("input", { value: p.searchOpts.facet, onChange: e => p.setSearchOpts(o => ({ ...o, facet: e.target.value })), placeholder: "Filter facet\u2026", style: { width: 130, padding: "6px 9px", border: "1px solid " + C.line, borderRadius: 7, fontSize: 12, outline: "none", color: C.ink } }))),
           // table
           !res ? h("div", { style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, color: C.mut, fontSize: 13.5, padding: 40, textAlign: "center" } },
             h("div", { style: { maxWidth: 420, lineHeight: 1.6 } }, "Paste HGNC symbols in the rail and run the search to test your gene set against every curated list."),
@@ -940,9 +739,10 @@ class Component extends DCLogic {
             res && (() => {
               const info = G.compute.resolveInfo(p.fpInput);
               if (!info.remapped.length && !info.missing.length) return null;
-              return h("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 } },
-                info.remapped.length ? h(this.RemappedGenes, { pairs: info.remapped }) : null,
-                info.missing.length ? h(this.MissingGenes, { genes: info.missing }) : null);
+              const bits = [];
+              if (info.remapped.length) bits.push(info.remapped.length + " alias" + (info.remapped.length > 1 ? "es" : "") + " remapped");
+              if (info.missing.length) bits.push(info.missing.length + " not in any list");
+              return h("div", { title: (info.remapped.length ? "Remapped: " + info.remapped.map(x => x[0] + " \u2192 " + x[1]).join(", ") + ". " : "") + (info.missing.length ? "Not found: " + info.missing.join(", ") : ""), style: { fontSize: 11.5, color: C.mut, border: "1px solid " + C.line, borderRadius: 6, padding: "3px 8px", cursor: "help" } }, bits.join(" \u00b7 "));
             })(),
             h("div", { style: { flex: 1 } }),
             p.fpOpts.cluster && viewRes.clusterCount ? h("div", { title: "Genes are grouped into clusters by how similar their fingerprints are across the facets. Each colour marks one cluster. It has no biological meaning on its own.", style: { display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: C.sub, marginRight: 14, cursor: "help" } },
