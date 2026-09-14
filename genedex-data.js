@@ -1,16 +1,18 @@
 /* ============================================================================
    Genedex data + compute layer
    ----------------------------------------------------------------------------
-   Loads gene-list metadata (data/genedex-meta.json) and attaches gene members
-   to each list, then builds indices and exposes hypergeometric / consensus /
-   fingerprint / co-travel / facet-network compute helpers on window.Genedex.
+   Client-side loader + compute. On GitHub Pages this fetches the bundled JSON
+   under data/ and runs enrichment / fingerprint / co-travel in the browser.
 
-   >>> SWAPPING IN REAL DATA <<<
-   Gene memberships are currently SYNTHESISED (deterministic, biologically
-   structured) because the per-list .txt files were not yet supplied. To use
-   real data, replace `buildSyntheticMembers()` with a loader that, for each
-   list `gl`, fetches `genelists/<gl>.txt` (one HGNC symbol per line, a
-   GENE_SYMBOL header allowed) and returns gl -> string[]. Nothing else changes.
+   Optional override (set before this script):
+     window.GENEDEX_CONFIG = {
+       mode: "static",          // "static" now; "api" later
+       apiBase: "",             // e.g. "https://api.example.org/v1/"
+       allowSynthetic: false    // true, or ?demo=1, keeps the demo fallback
+     };
+
+   When mode is "api", G.query.* POSTs to apiBase instead of running locally.
+   G.compute remains the in-browser implementation either way.
    ============================================================================ */
 (function () {
   "use strict";
@@ -20,6 +22,57 @@
   // a freshly-zeroed object and rebuild it asynchronously, which can surface as
   // a transient "reading 'length' of undefined" while components are rendering.
   if (window.Genedex && window.Genedex.ready) return;
+
+  // Capture the script directory now — document.currentScript is null later.
+  // Resolving data URLs from here (not the page URL) keeps GitHub project pages
+  // working with or without a trailing slash.
+  const SCRIPT_BASE = (function () {
+    const s = document.currentScript;
+    if (s && s.src) {
+      try { return new URL("./", s.src).href; } catch (e) {}
+    }
+    return new URL("./", location.href).href;
+  })();
+
+  function readConfig() {
+    const user = window.GENEDEX_CONFIG || {};
+    return {
+      mode: user.mode === "api" ? "api" : "static",
+      staticBase: user.staticBase || (SCRIPT_BASE + "data/"),
+      apiBase: user.apiBase || "",
+      allowSynthetic: !!(user.allowSynthetic || /(?:\?|&|#)demo=1\b/.test(location.search + location.hash)),
+      endpoints: Object.assign({
+        meta: "genedex-meta.json",
+        members: "genedex-members.json",
+        facets: "facet-definitions.json",
+        aliases: "gene-aliases.json",
+        similarity: "similarity.json",
+        enrich: "enrich",
+        fingerprint: "fingerprint",
+        cotravel: "cotravel",
+        modules: "modules",
+      }, user.endpoints || {}),
+    };
+  }
+
+  function resourceUrl(cfg, key) {
+    const name = (cfg.endpoints && cfg.endpoints[key]) || key;
+    const root = (cfg.mode === "api" && cfg.apiBase) ? cfg.apiBase : cfg.staticBase;
+    const base = /\/$/.test(root) ? root : root + "/";
+    return new URL(name, base).href;
+  }
+
+  async function loadJson(cfg, key, required) {
+    const url = resourceUrl(cfg, key);
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = new Error("Failed to load " + key + " (" + res.status + ") from " + url);
+      if (required) throw err;
+      console.warn("[Genedex]", err.message);
+      return null;
+    }
+    return res.json();
+  }
 
   // ---- deterministic RNG ----------------------------------------------------
   function hashStr(str) {
@@ -137,6 +190,7 @@
   const G = {
     ready: null, lists: [], universe: [], ffFacets: [], cfFacets: [],
     facetMeta: {}, geneIndex: {}, facetIndex: {}, classify: classify,
+    config: readConfig(),
   };
 
   function classify(facet) {
@@ -1255,6 +1309,39 @@
 
   G.compute = compute;
 
+  async function apiQuery(name, payload) {
+    const cfg = G.config;
+    if (!cfg || cfg.mode !== "api" || !cfg.apiBase) throw new Error("API mode is not configured");
+    const res = await fetch(resourceUrl(cfg, name), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    });
+    if (!res.ok) throw new Error(name + " API failed (" + res.status + ")");
+    return res.json();
+  }
+
+  // Query façade used by the UI. Static mode runs G.compute in the browser;
+  // set GENEDEX_CONFIG.mode = "api" (and apiBase) to POST the same payloads.
+  G.query = {
+    async enrich(genes, opts) {
+      if (G.config.mode === "api" && G.config.apiBase) return apiQuery("enrich", { genes: genes, opts: opts });
+      return compute.enrich(genes, opts);
+    },
+    async fingerprint(genes, opts) {
+      if (G.config.mode === "api" && G.config.apiBase) return apiQuery("fingerprint", { genes: genes, opts: opts });
+      return compute.fingerprint(genes, opts);
+    },
+    async cotravelTest(gene, opts, onProgress) {
+      if (G.config.mode === "api" && G.config.apiBase) return apiQuery("cotravel", { gene: gene, opts: opts });
+      return compute.cotravelTest(gene, opts, onProgress);
+    },
+    async geneModules(genes, opts, onProgress) {
+      if (G.config.mode === "api" && G.config.apiBase) return apiQuery("modules", { genes: genes, opts: opts });
+      return compute.geneModules(genes, opts, onProgress);
+    },
+  };
+
   // ---- real-data ingestion (developer upload) -------------------------------
   async function inflateRaw(u8) { const ds = new DecompressionStream("deflate-raw"); const w = ds.writable.getWriter(); w.write(u8); w.close(); const ab = await new Response(ds.readable).arrayBuffer(); return new Uint8Array(ab); }
   async function unzip(arrayBuffer) {
@@ -1376,7 +1463,8 @@
   G.loadSimilarity = function () {
     if (simPromise) return simPromise;
     simPromise = (async () => {
-      const r = await fetch("data/similarity.json");
+      const r = await fetch(resourceUrl(G.config, "similarity"));
+      if (!r.ok) throw new Error("Failed to load similarity (" + r.status + ")");
       const d = await r.json();
       const n = d.n, scale = d.corScale;
       const cb = b64ToBytes(d.cor_b64);
@@ -1407,8 +1495,8 @@
 
   // ---- bootstrap ------------------------------------------------------------
   G.ready = (async function () {
-    const res = await fetch("data/genedex-meta.json");
-    G.lists = await res.json();
+    const cfg = G.config = readConfig();
+    G.lists = await loadJson(cfg, "meta", true);
     // Normalise directionality casing — source data mixes "Up"/"up" and "Down"/"down"
     // (e.g. the SEA-AD / Gabitto selective-vulnerability lists use lowercase), which
     // otherwise fails the many `dir === "Up"` comparisons and leaves them uncoloured.
@@ -1454,43 +1542,43 @@
     let applied = false;
     // 1) user-uploaded data in IndexedDB takes precedence (manual override)
     try { const stored = await idbGet("genelists"); if (stored && stored.map) { applyMembers(stored.map); G.synthetic = false; G.dataLabel = stored.label || "Uploaded data"; G.dataStats = stored.stats; applied = true; } } catch (e) {}
-    // 2) otherwise load the bundled real per-list gene memberships
+    // 2) bundled real per-list gene memberships (client-side JSON on GitHub Pages)
     if (!applied) {
-      try {
-        const mres = await fetch("data/genedex-members.json");
-        if (mres.ok) {
-          const map = await mres.json();
-          applyMembers(map);
-          G.synthetic = false;
-          G.dataLabel = "Curated gene lists";
-          G.dataStats = previewStats(map);
-          applied = true;
-        }
-      } catch (e) {}
+      const map = await loadJson(cfg, "members", !cfg.allowSynthetic);
+      if (map) {
+        applyMembers(map);
+        G.synthetic = false;
+        G.dataLabel = "Curated gene lists";
+        G.dataStats = previewStats(map);
+        applied = true;
+      }
     }
     // 3) last resort: deterministic synthetic placeholder genes
-    if (!applied) { buildSyntheticMembers(G.lists); G.synthetic = true; G.dataLabel = "Demo (synthetic)"; }
+    if (!applied) {
+      if (!cfg.allowSynthetic) throw new Error("Gene-list memberships failed to load");
+      buildSyntheticMembers(G.lists); G.synthetic = true; G.dataLabel = "Demo (synthetic)";
+    }
     if (!G.facetPool) G.facetPool = {}; // real-data mode has no synthetic facet pool; empty = no per-facet gene restriction
     buildIndices();
     // Alias map (HGNC): keep only entries that resolve a symbol absent from the
     // curated universe onto one present in it. Numeric keys (Excel-mangled
     // source rows) are discarded.
+    G.facetDefs = (await loadJson(cfg, "facets", false)) || {};
+
     G.aliases = {};
-    try {
-      const ares = await fetch("data/gene-aliases.json");
-      if (ares.ok) {
-        const raw = await ares.json();
-        let n = 0;
-        for (const k in raw) {
-          const from = String(k).trim().toUpperCase();
-          const to = String(Array.isArray(raw[k]) ? raw[k][0] : raw[k]).trim().toUpperCase();
-          if (!from || !to || from === to || /^\d+$/.test(from)) continue;
-          if (G.geneIndex[from] || !G.geneIndex[to]) continue;
-          G.aliases[from] = to; n++;
-        }
-        G.aliasCount = n;
+    G.aliasCount = 0;
+    const rawAliases = await loadJson(cfg, "aliases", false);
+    if (rawAliases) {
+      let n = 0;
+      for (const k in rawAliases) {
+        const from = String(k).trim().toUpperCase();
+        const to = String(Array.isArray(rawAliases[k]) ? rawAliases[k][0] : rawAliases[k]).trim().toUpperCase();
+        if (!from || !to || from === to || /^\d+$/.test(from)) continue;
+        if (G.geneIndex[from] || !G.geneIndex[to]) continue;
+        G.aliases[from] = to; n++;
       }
-    } catch (e) { G.aliasCount = 0; }
+      G.aliasCount = n;
+    }
     return G;
   })();
 
