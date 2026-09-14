@@ -528,7 +528,7 @@ class Component extends DCLogic {
         h("div", { className: "gdx-hero-pad", style: { position: "relative", maxWidth: 1080, margin: "0 auto" } },
           h("div", { className: "gdx-hero-grid" },
             h("div", null,
-              h("h1", { id: "gdx-hero-title", className: "gdx-hero-title" }, "Input your gene sets"),
+              h("h1", { id: "gdx-hero-title", className: "gdx-hero-title" }, "Input your gene list"),
               h("form", {
                 onSubmit: (e) => { e.preventDefault(); runAnalyze(draft); },
                 "aria-label": "Gene Search",
