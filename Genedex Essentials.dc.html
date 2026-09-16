@@ -58,6 +58,32 @@
     .gdx-hero-pad{padding:32px 18px 36px}
     .gdx-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
+  .gdx-ctx-banner{background:#fbf0e1;border:1px solid #f0cd97;color:#a05504;border-radius:8px;padding:10px 14px;font-size:14px;line-height:1.45}
+  .gdx-ctx-filters{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end}
+  .gdx-ctx-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .gdx-ctx-field label{font-size:12px;font-weight:600;color:#586374;letter-spacing:.03em;text-transform:uppercase}
+  .gdx-ctx-select{border:1px solid #e6e9ed;border-radius:8px;padding:7px 10px;font-size:14px;color:#1b2129;background:#fff;min-width:160px}
+  .gdx-ctx-select:focus{outline:2px solid #0b8177;outline-offset:2px}
+  .gdx-ctx-wrap{overflow:auto;flex:1;min-height:0}
+  .gdx-ctx-table{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%}
+  .gdx-ctx-table th,.gdx-ctx-table td{border-bottom:1px solid #eef1f4;border-right:1px solid #eef1f4;padding:8px 10px;text-align:center;vertical-align:middle;background:#fff}
+  .gdx-ctx-table thead th{position:sticky;top:0;z-index:3;background:#fafbfc;font-weight:600;font-size:12px;color:#586374}
+  .gdx-ctx-sticky-col{position:sticky;left:0;z-index:2;text-align:left;font-weight:500;color:#1b2129;max-width:240px;white-space:normal;background:#fff}
+  .gdx-ctx-table thead .gdx-ctx-sticky-col{z-index:4;background:#fafbfc}
+  .gdx-ctx-sticky-sum{position:sticky;right:0;z-index:2;white-space:nowrap;font-size:12px;color:#586374;background:#fafbfc;font-weight:500}
+  .gdx-ctx-table thead .gdx-ctx-sticky-sum{z-index:4}
+  .gdx-ctx-gene{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#1b2129;font-weight:600}
+  .gdx-ctx-cell{cursor:pointer;min-width:78px}
+  .gdx-ctx-cell:hover{background:#e4f3f1}
+  .gdx-ctx-cell-conflict{background:#fef3c7}
+  .gdx-ctx-cell-conflict:hover{background:#fde68a}
+  .gdx-ctx-cell:focus-visible{outline:2px solid #0b8177;outline-offset:-2px}
+  .gdx-ctx-empty{color:#616c7b}
+  .gdx-ctx-up{color:#d6453f;font-weight:600;white-space:nowrap}
+  .gdx-ctx-dn{color:#2f6fb0;font-weight:600;white-space:nowrap}
+  .gdx-ctx-uns{color:#616c7b;font-weight:500;white-space:nowrap}
+  .gdx-ctx-conflict{background:#fde68a;color:#92400e;font-weight:600;border-radius:6px;padding:4px 7px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+  .gdx-ctx-n{font-weight:500;color:#586374}
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}
   }
@@ -158,19 +184,19 @@ class Component extends DCLogic {
         const q = new URLSearchParams(window.location.search);
         const tabRaw = (q.get("tab") || "home").toLowerCase();
         const viewRaw = (q.get("view") || "").toLowerCase();
-        const tabsOk = { home: "home", workbench: "workbench", search: "workbench", fingerprint: "workbench", network: "network", download: "download", docs: "docs", about: "about" };
-        const viewsOk = { search: "search", fingerprint: "fingerprint" };
+        const tabsOk = { home: "home", workbench: "workbench", search: "workbench", fingerprint: "workbench", contexts: "workbench", context: "workbench", network: "network", download: "download", docs: "docs", about: "about" };
+        const viewsOk = { search: "search", fingerprint: "fingerprint", contexts: "contexts", context: "contexts" };
         const dirMap = { all: "All", up: "Up", down: "Down" };
         const genes = (q.get("genes") || "").split(/[,\s;]+/).map(s => s.trim()).filter(Boolean);
         const fdrRaw = q.get("fdr");
-        const fdr = fdrRaw != null && fdrRaw !== "" && !isNaN(+fdrRaw) ? Math.min(1, Math.max(0, +fdrRaw)) : 0.05;
+        const fdr = fdrRaw != null && fdrRaw !== "" && !isNaN(+fdrRaw) ? Math.min(1, Math.max(0, +fdrRaw)) : null;
         const dir = dirMap[String(q.get("direction") || q.get("dir") || "all").toLowerCase()] || "All";
-        const view = viewsOk[viewRaw] || (tabRaw === "fingerprint" ? "fingerprint" : "search");
+        const view = viewsOk[viewRaw] || (tabRaw === "fingerprint" ? "fingerprint" : (tabRaw === "contexts" || tabRaw === "context") ? "contexts" : "search");
         let tab = tabsOk[tabRaw] || "home";
-        if (!q.get("tab") && (viewRaw === "fingerprint" || viewRaw === "search")) tab = "workbench";
+        if (!q.get("tab") && (viewRaw === "fingerprint" || viewRaw === "search" || viewRaw === "contexts" || viewRaw === "context")) tab = "workbench";
         return { tab, view, geneText: genes.join("\n"), fdr, dir, facet: q.get("facets") || q.get("facet") || "" };
       } catch (e) {
-        return { tab: "home", view: "search", geneText: "", fdr: 0.05, dir: "All", facet: "" };
+        return { tab: "home", view: "search", geneText: "", fdr: null, dir: "All", facet: "" };
       }
     };
     const writeUrlState = (s) => {
@@ -191,8 +217,8 @@ class Component extends DCLogic {
     };
     const url0 = readUrlState();
 
-    const [tab, setTab] = useState(() => (url0.tab && url0.tab !== "home") ? url0.tab : ((url0.geneText || url0.view === "fingerprint") ? "workbench" : "home"));
-    const [wbTab, setWbTab] = useState(() => url0.view === "fingerprint" ? "fingerprint" : "search");
+    const [tab, setTab] = useState(() => (url0.tab && url0.tab !== "home") ? url0.tab : ((url0.geneText || url0.view === "fingerprint" || url0.view === "contexts") ? "workbench" : "home"));
+    const [wbTab, setWbTab] = useState(() => url0.view === "fingerprint" ? "fingerprint" : url0.view === "contexts" ? "contexts" : "search");
     const [sessionLists, setSessionLists] = useState([]);
     const [legendOpen, setLegendOpen] = useState(false);
     const [devMode, setDevMode] = useState(() => { try { return localStorage.getItem("gdx_dev") === "1" || /dev/.test(location.hash); } catch (e) { return false; } });
@@ -201,12 +227,16 @@ class Component extends DCLogic {
 
     // ---- shared workbench state ----
     const DEFAULT = "APOE\nAPP\nMAPT\nTREM2\nBIN1\nCLU\nPSEN1\nGFAP\nAQP4\nC1QA\nCX3CR1\nSNAP25\nBDNF\nNLRP3\nSPP1\nSORL1\nPICALM\nABCA7";
-    const [searchInput, setSearchInput] = useState(url0.geneText);
+    const [wbGenes, setWbGenes] = useState(url0.geneText);
+    const searchInput = wbGenes, setSearchInput = setWbGenes;
+    const fpInput = wbGenes, setFpInput = setWbGenes;
+    const ctxInput = wbGenes, setCtxInput = setWbGenes;
     const [searchRes, setSearchRes] = useState(null);
-    const [searchOpts, setSearchOpts] = useState({ dir: url0.dir, fdr: url0.fdr, facet: url0.facet, sort: "fdr", sortDir: "asc" });
-    const [fpInput, setFpInput] = useState(url0.geneText);
+    const [searchOpts, setSearchOpts] = useState({ dir: url0.dir, fdr: url0.fdr != null ? url0.fdr : 0.05, facet: url0.facet, sort: "fdr", sortDir: "asc" });
     const [fpRes, setFpRes] = useState(null);
     const [fpOpts, setFpOpts] = useState({ dir: "All", mode: "count", unit: "study", tissues: [], types: [], contrasts: [], facetClass: "both", showSig: false, cellTypes: [], funcFacets: [], tissueFacets: [], restrictFf: [], restrictCf: [], rowOrder: "breadth", cluster: false });
+    const [ctxRes, setCtxRes] = useState(null);
+    const [ctxOpts, setCtxOpts] = useState({ process: "", minStudies: 1, direction: "Any", hideEmptyGenes: false });
     const [ctOpts, setCtOpts] = useState({ minCooccurrence: 1, nPermutations: 1000, fdrAlpha: 0.05, facetTypes: { ff: true, cf: true }, minFacetOccurrence: 1 });
     const [ctInput, setCtInput] = useState("APOE");
     const [ctRes, setCtRes] = useState(null);
@@ -222,6 +252,7 @@ class Component extends DCLogic {
 
     const searchSeq = React.useRef(0);
     const fpSeq = React.useRef(0);
+    const ctxSeq = React.useRef(0);
     const searchOptsRef = React.useRef(searchOpts);
     const fpOptsRef = React.useRef(fpOpts);
     searchOptsRef.current = searchOpts;
@@ -256,10 +287,32 @@ class Component extends DCLogic {
       const t = setTimeout(() => runFingerprint(fpInput, fpOptsRef.current), 220);
       return () => clearTimeout(t);
     }, [fpInput, runFingerprint]);
+    const runContexts = useCallback(async (text) => {
+      const seq = ++ctxSeq.current;
+      const genes = G.compute.norm((text || "").split(/[\s,;]+/));
+      if (!genes.length) {
+        if (seq === ctxSeq.current) setCtxRes(null);
+        return;
+      }
+      try {
+        const run = (G.compute && G.compute.contexts)
+          ? (g) => G.compute.contexts(g)
+          : (G.query && G.query.contexts);
+        if (!run) throw new Error("Context Matrix is unavailable. Reload the page to pick up the data layer.");
+        const res = await run(genes);
+        if (seq === ctxSeq.current) setCtxRes(res);
+      } catch (e) {
+        if (seq === ctxSeq.current) setCtxRes({ error: e.message || String(e), genes: genes, found: [], rows: [], processes: [] });
+      }
+    }, []);
     React.useEffect(() => {
-      const t = setTimeout(() => writeUrlState({ tab, view: wbTab, genes: searchInput, fdr: searchOpts.fdr, dir: searchOpts.dir, facet: searchOpts.facet }), 280);
+      const t = setTimeout(() => runContexts(ctxInput), 220);
       return () => clearTimeout(t);
-    }, [tab, wbTab, searchInput, searchOpts.fdr, searchOpts.dir, searchOpts.facet]);
+    }, [ctxInput, runContexts]);
+    React.useEffect(() => {
+      const t = setTimeout(() => writeUrlState({ tab, view: wbTab, genes: wbGenes, fdr: searchOpts.fdr, dir: searchOpts.dir, facet: searchOpts.facet }), 280);
+      return () => clearTimeout(t);
+    }, [tab, wbTab, wbGenes, searchOpts.fdr, searchOpts.dir, searchOpts.facet]);
     React.useEffect(() => {
       const onKey = (e) => {
         if (e.key !== "Escape") return;
@@ -295,8 +348,10 @@ class Component extends DCLogic {
     }, []);
 
     const loadExample = (which) => {
-      if (which === "fingerprint") { setFpInput(DEFAULT); runFingerprint(DEFAULT, fpOpts); }
-      else { setSearchInput(DEFAULT); runSearch(DEFAULT, searchOpts); }
+      setWbGenes(DEFAULT);
+      if (which === "fingerprint") runFingerprint(DEFAULT, fpOpts);
+      else if (which === "contexts") runContexts(DEFAULT);
+      else runSearch(DEFAULT, searchOpts);
     };
 
     const analyzeFromHome = async (text) => {
@@ -305,8 +360,10 @@ class Component extends DCLogic {
       const asLines = genes.join("\n");
       setSearchInput(asLines);
       setFpInput(asLines);
+      setCtxInput(asLines);
       await runSearch(asLines, searchOpts);
       await runFingerprint(asLines, fpOpts);
+      await runContexts(asLines);
       setTab("workbench");
       setWbTab("search");
       return genes;
@@ -315,13 +372,15 @@ class Component extends DCLogic {
     const pushToFingerprint = async (genes) => { setFpInput(genes.join("\n")); setFpRes(await G.query.fingerprint(genes, { dir: fpOpts.dir, unit: fpOpts.unit, tissues: fpOpts.tissues, types: fpOpts.types, contrasts: fpOpts.contrasts, restrictFf: fpOpts.restrictFf, restrictCf: fpOpts.restrictCf })); setTab("workbench"); setWbTab("fingerprint"); };
     const pushToCotravel = (genes) => { if (!genes || !genes.length) return; const q = genes.join(", "); setCtInput(q); runCotravel(q, ctOpts); setTab("workbench"); setWbTab("cotravel"); };
     const pushToModules = (genes) => { if (!genes || !genes.length) return; const q = genes.join(", "); setGmInput(q); runModules(q, gmOpts); setTab("workbench"); setWbTab("modules"); };
+    const goWbTab = (id) => { setWbTab(id); };
     const saveList = (name, genes) => setSessionLists(l => [...l.filter(x => x.name.toLowerCase() !== name.toLowerCase()), { name, genes }]);
 
 
 
-    const shared = { C, G, h, tab, setTab, wbTab, setWbTab, sessionLists, saveList,
+    const shared = { C, G, h, tab, setTab, wbTab, setWbTab: goWbTab, sessionLists, saveList,
       searchInput, setSearchInput, searchRes, setSearchRes, searchOpts, setSearchOpts, runSearch,
       fpInput, setFpInput, fpRes, fpOpts, setFpOpts, runFingerprint,
+      ctxInput, setCtxInput, ctxRes, ctxOpts, setCtxOpts, runContexts,
       ctInput, setCtInput, ctRes, ctOpts, setCtOpts, runCotravel, ctBusy, ctProgress, ctError,
       gmInput, setGmInput, gmRes, gmOpts, setGmOpts, runModules, gmBusy, gmProgress, gmError,
       pushToFingerprint, pushToCotravel, pushToModules, setLegendOpen, exampleGenes: DEFAULT, loadExample, analyzeFromHome };
@@ -421,13 +480,23 @@ class Component extends DCLogic {
         h(FIG, { src: "docs/gene-fingerprint.png", caption: "Gene Fingerprint with Facet class set to Functional and the # Lists scale. Genes run down the rows, facets across the columns; darker cells mean the gene appears in more of that facet\u2019s lists. Set Facet class to All to add the cellular and tissue bands." }),
         h("p", { style: { margin: 0, color: C.sub, fontSize: 14 } }, "Exports sit pinned at the bottom of the rail: Download CSV for the matrix as displayed, PNG for the figure, and Refs CSV for the source list behind every non-empty cell. Grid keeps the matrix shape, Long gives one row per gene, facet and list, which is the easier form to filter into a citation set.")),
 
+      h(S, { key: "ctx", kicker: "Module", title: "Context Matrix", accent: C.cf },
+        h("p", { style: { margin: 0 } }, "A joint evidence map of query genes against cell type \u00d7 brain region. Unlike Fingerprint, which counts each axis on its own, this view keeps the combination: where a gene was reported, in which cell type, and in which direction. Cells themselves are not statistical tests; an FDR slider can drop lists whose overlap with your query is weaker than the cutoff."),
+        h(DL, { items: [
+          ["Rows", "Each row is one cell type / brain region pair, for example Astrocytes / Prefrontal Cortex. Rows with no remaining genes are hidden."],
+          ["Cells", "An up or down triangle plus unique study count. Amber warning marks genes with both Up and Down reports in that exact context."],
+          ["Filters", "AD Process, minimum unique studies (1+ or 2+), direction, and list FDR. List FDR is shared with Gene Search (and the URL fdr parameter): the same cutoff keeps or drops whole curated lists, then the matrix is redrawn. The header reports how many lists are drawing the current grid."],
+          ["Hide empty genes", "Optional. Drops query genes that have no populated cells after the current filters."],
+          ["Provenance", "Click a filled cell for the supporting studies, PubMed links, reported direction, method, and list ID. The summary counts unique studies and unique lists; Up / Down / Unspecified are unique studies with that reported direction (one paper can appear in both if it has Up and Down lists)."],
+        ] })),
+
       h(S, { key: "net", kicker: "Module", title: "Facets Network", accent: C.tf },
         h("p", { style: { margin: 0 } }, "Facets as nodes, joined when they share genes. It shows how the annotation vocabulary itself is organised: which biology co-occurs, and which facets are effectively redundant because their gene membership is near-identical."),
         h(FIG, { src: "docs/facets-network.png", caption: "Facets Network at its default threshold. Teal circles are functional facets, amber diamonds cellular ones; node size tracks how many lists carry the facet. Raise Min shared genes to thin the edges, or scroll to zoom into a region." }),
         h("p", { style: { margin: 0, color: C.sub, fontSize: 14 } }, "Edge threshold and significance controls set how much shared membership is needed before two facets are drawn as connected; community detection groups the facets that hang together.")),
 
       h(S, { key: "lists", kicker: "Workspace", title: "My Lists", accent: C.ink },
-        h("p", { style: { margin: 0 } }, "Any gene set you paste or derive can be saved to My Lists for the session and reloaded into another module, so one result can be carried across Search and Fingerprint without retyping.")),
+        h("p", { style: { margin: 0 } }, "Any gene set you paste or derive can be saved to My Lists for the session and reloaded into another module, so one result can be carried across Search, Fingerprint and Context Matrix without retyping.")),
 
     ]);
   };
@@ -567,6 +636,7 @@ class Component extends DCLogic {
     ];
     const cards = [
       { tag: "Profile", title: "Gene Fingerprint", desc: "Profile a gene set across facets and reference lists at once.", accent: C.cf, accentBg: C.cfBg, go: () => { p.setTab("workbench"); p.setWbTab("fingerprint"); } },
+      { tag: "Context", title: "Context Matrix", desc: "See where query genes change by cell type, brain region and direction.", accent: C.cf, accentBg: C.cfBg, go: () => { p.setTab("workbench"); p.setWbTab("contexts"); } },
       { tag: "Explore", title: "Facets Network", desc: "See how facets relate to each other by the genes they share.", accent: C.tf, accentBg: C.tfBg, go: () => p.setTab("network") },
     ];
 
@@ -715,14 +785,120 @@ class Component extends DCLogic {
             boxShadow: on ? "0 1px 2px rgba(20,30,50,.10)" : "none" } }, l); }));
   };
 
+  contextStudyKey = (l) => {
+    if (!l) return "L:";
+    if (l.study) return l.study;
+    if (l.pmid) return "P:" + l.pmid;
+    if (l.doi) return "D:" + l.doi;
+    if (l.author || l.title) return "A:" + (l.author || "") + "|" + (l.title || "");
+    return "L:" + (l.gl || "");
+  };
+  summarizeContextCell = (sources) => {
+    const studies = new Set(), gls = new Set();
+    const dirStudies = { Up: new Set(), Down: new Set(), Unspecified: new Set() };
+    (sources || []).forEach(s => {
+      const sk = this.contextStudyKey(s);
+      studies.add(sk);
+      if (s.gl) gls.add(s.gl);
+      const d = s.dir === "Up" ? "Up" : s.dir === "Down" ? "Down" : "Unspecified";
+      dirStudies[d].add(sk);
+    });
+    const nUp = dirStudies.Up.size, nDown = dirStudies.Down.size, nUnspecified = dirStudies.Unspecified.size;
+    return {
+      nUp: nUp, nDown: nDown, nUnspecified: nUnspecified,
+      nStudies: studies.size, nLists: gls.size,
+      isConflict: nUp > 0 && nDown > 0,
+      dirs: { Up: nUp, Down: nDown, Unspecified: nUnspecified },
+    };
+  };
+  contextMatrix = (geneList, corpus, opts) => {
+    const G = window.Genedex;
+    if (corpus && !Array.isArray(corpus)) { opts = corpus; corpus = null; }
+    opts = opts || {};
+    if (G && G.compute && typeof G.compute.contexts === "function") return G.compute.contexts(geneList, corpus, opts);
+    const info = G.compute.resolveInfo(geneList);
+    const genes = info.genes;
+    const gset = new Set(info.found);
+    let lists = Array.isArray(corpus) ? corpus : G.lists;
+    const fdrMax = opts.fdr == null ? 1 : Math.min(1, Math.max(0, +opts.fdr));
+    let fdrByGl = opts.fdrByGl || null;
+    if (!fdrByGl && G.compute.enrich) {
+      fdrByGl = {};
+      G.compute.enrich(geneList, { dir: opts.dir || "All" }).rows.forEach(r => { fdrByGl[r.gl] = r.fdr; });
+    }
+    const nListsOverlap = fdrByGl ? Object.keys(fdrByGl).length : 0;
+    if (fdrByGl) {
+      lists = lists.filter(l => {
+        if (fdrByGl[l.gl] == null) return false;
+        if (fdrMax < 1 && fdrByGl[l.gl] > fdrMax) return false;
+        return true;
+      });
+    }
+    const nListsPassFdr = lists.length;
+    const ctxMap = new Map();
+    lists.forEach(l => {
+      if (!gset.size) return;
+      const hits = (l.genes || []).filter(g => gset.has(g));
+      if (!hits.length) return;
+      const tissue = l.tissue || "Unspecified";
+      const cts = (l.cfAtoms && l.cfAtoms.length) ? l.cfAtoms : ["Unspecified"];
+      const processes = (l.ffAtoms && l.ffAtoms.length) ? l.ffAtoms.slice() : [];
+      const process = processes[0] || "";
+      const dir = l.dir === "Up" ? "Up" : l.dir === "Down" ? "Down" : "Unspecified";
+      const study = this.contextStudyKey(l);
+      const srcBase = {
+        gl: l.gl, pmid: l.pmid || "", doi: l.doi || "", dir: dir,
+        short: l.short || l.name || l.gl, author: l.author || "", title: l.title || "",
+        tissue: tissue, process: process, processes: processes,
+        studyType: l.studyType || "", notes: l.notes || "",
+        n: (typeof l.n === "number" && l.n > 0) ? l.n : ((l.genes && l.genes.length) || 0),
+        genetic: l.genetic || "", contrast: l.contrast || "", listType: l.listType || "", study: study,
+        fdr: fdrByGl ? fdrByGl[l.gl] : undefined,
+      };
+      hits.forEach(gene => {
+        cts.forEach(cellType => {
+          const id = cellType + "\t" + tissue;
+          let row = ctxMap.get(id);
+          if (!row) {
+            row = { id: id, cellType: cellType, tissue: tissue, label: cellType + " / " + tissue, processes: new Set(), cells: {} };
+            ctxMap.set(id, row);
+          }
+          processes.forEach(f => row.processes.add(f));
+          let cell = row.cells[gene];
+          if (!cell) { cell = { gene: gene, sources: [] }; row.cells[gene] = cell; }
+          cell.sources.push(Object.assign({ gene: gene, cellType: cellType }, srcBase));
+        });
+      });
+    });
+    const processSet = new Set();
+    const rows = [];
+    ctxMap.forEach(row => {
+      row.processes.forEach(f => processSet.add(f));
+      const cells = {};
+      let nGenes = 0, nConflicts = 0;
+      genes.forEach(g => {
+        const raw = row.cells[g];
+        if (!raw) return;
+        const stats = this.summarizeContextCell(raw.sources);
+        cells[g] = Object.assign({ gene: g, sources: raw.sources }, stats);
+        nGenes++;
+        if (stats.isConflict) nConflicts++;
+      });
+      rows.push({ id: row.id, cellType: row.cellType, tissue: row.tissue, label: row.label, processes: Array.from(row.processes).sort(), nGenes: nGenes, nConflicts: nConflicts, cells: cells });
+    });
+    rows.sort((a, b) => b.nGenes - a.nGenes || a.cellType.localeCompare(b.cellType) || a.tissue.localeCompare(b.tissue));
+    return { genes: genes, found: info.found, missing: info.missing, remapped: info.remapped, rows: rows, processes: Array.from(processSet).sort(), nContexts: rows.length, nInput: genes.length, nListsOverlap: nListsOverlap, nListsPassFdr: nListsPassFdr, nListsKept: nListsPassFdr, fdr: fdrMax };
+  };
+
   // =====================================================================
-  //  WORKBENCH (Search + Fingerprint + Co-travel)
+  //  WORKBENCH (Search + Fingerprint + Context Matrix)
   // =====================================================================
   Workbench = (p) => {
     const h = React.createElement, C = this.C, G = window.Genedex;
-    const { useState, useRef, useEffect } = React;
+        const { useState, useRef, useEffect } = React;
     const [expanded, setExpanded] = useState(null);
     const [cellDrawer, setCellDrawer] = useState(null);
+    const [ctxDrawer, setCtxDrawer] = useState(null);
     const [openList, setOpenList] = useState(null);
     const metaByGl = React.useMemo(() => { const m = {}; G.lists.forEach(l => m[l.gl] = l); return m; }, []);
     const [ctSel, setCtSel] = useState(null);
@@ -734,17 +910,16 @@ class Component extends DCLogic {
     useEffect(() => {
       const onKey = (e) => {
         if (e.key !== "Escape") return;
-        setExpanded(null); setCellDrawer(null); setOpenList(null); setCtSel(null); setGmOpen(null);
+        setExpanded(null); setCellDrawer(null); setCtxDrawer(null); setOpenList(null); setCtSel(null); setGmOpen(null);
       };
       window.addEventListener("keydown", onKey);
       return () => window.removeEventListener("keydown", onKey);
     }, []);
-
     const copy = (txt, msg) => { try { navigator.clipboard.writeText(txt); } catch (e) {} setToast(msg || "Copied"); setTimeout(() => setToast(""), 1400); };
     const parseCount = (t) => G.compute.norm((t || "").split(/[\s,;]+/)).length;
     const fmtP = (v) => v < 0.0001 ? v.toExponential(1) : v.toFixed(4);
 
-    const subTabs = [["search", "Gene Search"], ["fingerprint", "Gene Fingerprint"]];
+    const subTabs = [["search", "Gene Search"], ["fingerprint", "Gene Fingerprint"], ["contexts", "Context Matrix"]];
 
     // ---- left rail building block ----
     const railTextarea = (val, setVal, ph) => h("textarea", { value: val, onChange: e => setVal(e.target.value), placeholder: ph,
@@ -1094,6 +1269,215 @@ class Component extends DCLogic {
                   full.contributor && h("span", { style: { fontSize: 12, color: C.mut } }, "Contributed by " + full.contributor))));}))}));
     };
 
+    // ================= CONTEXT MATRIX =================
+    const filterCtxRows = (res, opts) => {
+      if (!res || !res.rows) return [];
+      const process = opts.process || "";
+      const minStudies = opts.minStudies || 1;
+      const dir = opts.direction || "Any";
+      return res.rows.map(row => {
+        const cells = {};
+        let nGenes = 0, nConflicts = 0;
+        (res.genes || []).forEach(g => {
+          const raw = row.cells && row.cells[g];
+          if (!raw) return;
+          let sources = raw.sources || [];
+          if (process) sources = sources.filter(s => (s.processes && s.processes.includes(process)) || s.process === process);
+          if (!sources.length) return;
+          const stats = (G.compute.summarizeContextCell ? G.compute.summarizeContextCell(sources) : this.summarizeContextCell(sources));
+          if (stats.nStudies < minStudies) return;
+          if (dir === "Up" && (stats.isConflict || stats.nUp === 0)) return;
+          if (dir === "Down" && (stats.isConflict || stats.nDown === 0)) return;
+          if (dir === "Conflicting" && !stats.isConflict) return;
+          cells[g] = Object.assign({ gene: g, sources: sources }, stats);
+          nGenes++;
+          if (stats.isConflict) nConflicts++;
+        });
+        return Object.assign({}, row, { cells: cells, nGenes: nGenes, nConflicts: nConflicts });
+      }).filter(r => r.nGenes > 0);
+    };
+    const renderCtxCellBody = (cell) => {
+      if (!cell) return h("span", { className: "gdx-ctx-empty" }, "\u2014");
+      if (cell.isConflict) {
+        return h("span", { className: "gdx-ctx-conflict", title: "Conflicting Up and Down reports" },
+          "\u26A0 ", "(" + cell.nUp + "\u2191, " + cell.nDown + "\u2193)");
+      }
+      if (cell.nUp > 0) {
+        return h("span", { className: "gdx-ctx-up" }, "\u25B2 ", h("span", { className: "gdx-ctx-n" }, "(" + cell.nStudies + ")"));
+      }
+      if (cell.nDown > 0) {
+        return h("span", { className: "gdx-ctx-dn" }, "\u25BC ", h("span", { className: "gdx-ctx-n" }, "(" + cell.nStudies + ")"));
+      }
+      return h("span", { className: "gdx-ctx-uns" }, "\u00B7 ", h("span", { className: "gdx-ctx-n" }, "(" + cell.nStudies + ")"));
+    };
+    const renderContexts = () => {
+      const ctxText = G.compute.norm(String(p.ctxInput || "").split(/[\s,;]+/)).length ? p.ctxInput : (p.searchInput || p.fpInput || "");
+      let res = null, ctxErr = null;
+      const ctxOpts = p.ctxOpts || { process: "", minStudies: 1, direction: "Any", hideEmptyGenes: false };
+      const fdrMax = (p.searchOpts && p.searchOpts.fdr != null) ? Number(p.searchOpts.fdr) : 0.05;
+      try {
+        const genesIn = G.compute.norm(String(ctxText || "").split(/[\s,;]+/));
+        if (genesIn.length) res = this.contextMatrix(genesIn, { fdr: fdrMax });
+      } catch (e) {
+        ctxErr = e.message || String(e);
+      }
+      if (p.ctxRes && p.ctxRes.error && !res) ctxErr = p.ctxRes.error;
+      const genesAll = (res && (res.found && res.found.length ? res.found : res.genes)) || [];
+      const rows = res ? filterCtxRows(res, ctxOpts) : [];
+      const genes = ctxOpts.hideEmptyGenes ? genesAll.filter(g => rows.some(r => r.cells[g])) : genesAll;
+      const nListsShown = (() => {
+        const ids = new Set();
+        rows.forEach(r => Object.keys(r.cells || {}).forEach(g => (r.cells[g].sources || []).forEach(s => { if (s.gl) ids.add(s.gl); })));
+        return ids.size;
+      })();
+      const nListsPass = (res && res.nListsPassFdr != null) ? res.nListsPassFdr : nListsShown;
+      const nListsAll = (res && res.nListsOverlap != null) ? res.nListsOverlap : nListsPass;
+      const processes = (res && res.processes && res.processes.length) ? res.processes : (G.ffFacets || []);
+      const openProvenance = (gene, row, cell) => {
+        setCellDrawer(null); setOpenList(null);
+        setCtxDrawer({ gene: gene, row: row, cell: cell });
+      };
+      const selectStyle = { border: "1px solid " + C.line, borderRadius: 8, padding: "7px 10px", fontSize: 14, color: C.ink, background: C.bg, minWidth: 160 };
+      const emptyBox = (msg) => h("div", { style: { padding: 60, textAlign: "center", color: C.mut, fontSize: 14 } }, msg);
+      const infoChips = (() => {
+        if (!res) return null;
+        const info = G.compute.resolveInfo(ctxText);
+        if (!info.remapped.length && !info.missing.length) return null;
+        return h("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 } },
+          info.remapped.length ? h(this.RemappedGenes, { pairs: info.remapped }) : null,
+          info.missing.length ? h(this.MissingGenes, { genes: info.missing }) : null);
+      })();
+      let matrix;
+      if (!parseCount(ctxText)) {
+        matrix = emptyBox("Paste HGNC symbols to map genes onto joint cell-type \u00d7 brain-region contexts.");
+      } else if (ctxErr) {
+        matrix = emptyBox(ctxErr);
+      } else if (!res) {
+        matrix = emptyBox("Building the context matrix\u2026");
+      } else if (!(res.found && res.found.length)) {
+        matrix = emptyBox("No recognised genes. Paste HGNC symbols that appear in the curated lists.");
+      } else if (!rows.length) {
+        matrix = emptyBox("No contexts pass the current filters. Try raising FDR, All Processes, 1+ studies, or Any direction.");
+      } else {
+        const head = h("thead", null, h("tr", null,
+          h("th", { className: "gdx-ctx-sticky-col", scope: "col" }, "Cell Type / Brain Region"),
+          genes.map(g => h("th", { key: g, className: "gdx-ctx-gene", scope: "col" }, g)),
+          h("th", { className: "gdx-ctx-sticky-sum", scope: "col" }, "Summary")));
+        const body = h("tbody", null, rows.map(row => {
+          const summary = row.nGenes + " Gene" + (row.nGenes === 1 ? "" : "s") + (row.nConflicts ? " (" + row.nConflicts + " Conflict" + (row.nConflicts === 1 ? "" : "s") + ")" : "");
+          return h("tr", { key: row.id },
+            h("th", { className: "gdx-ctx-sticky-col", scope: "row", title: row.label }, row.label),
+            genes.map(g => {
+              const cell = row.cells[g];
+              if (!cell) return h("td", { key: g, className: "gdx-ctx-empty" }, "\u2014");
+              return h("td", Object.assign({ key: g, className: "gdx-ctx-cell" + (cell.isConflict ? " gdx-ctx-cell-conflict" : "") }, this.pressable(() => openProvenance(g, row, cell))), renderCtxCellBody(cell));
+            }),
+            h("td", { className: "gdx-ctx-sticky-sum" }, summary));
+        }));
+        matrix = h("table", { className: "gdx-ctx-table", role: "grid", "aria-label": "Context matrix" }, head, body);
+      }
+      const provenanceBody = ctxDrawer ? h("div", { style: { display: "flex", flexDirection: "column", gap: 12 } },
+        h("div", { style: { fontSize: 14, color: C.sub, lineHeight: 1.45 } },
+          h("b", { style: { fontFamily: "'IBM Plex Mono',monospace" } }, ctxDrawer.gene),
+          " in ", h("b", null, ctxDrawer.row.label),
+          ctxDrawer.cell.isConflict ? h("span", { className: "gdx-ctx-conflict", style: { marginLeft: 8 } }, "\u26A0 Conflicting") : null),
+        h("div", { style: { fontSize: 12, color: C.mut } },
+          ctxDrawer.cell.nStudies + " unique stud" + (ctxDrawer.cell.nStudies === 1 ? "y" : "ies") + " \u00b7 " +
+          ctxDrawer.cell.nLists + " list" + (ctxDrawer.cell.nLists === 1 ? "" : "s") +
+          " \u00b7 " + ctxDrawer.cell.nUp + " Up / " + ctxDrawer.cell.nDown + " Down" +
+          (ctxDrawer.cell.nUnspecified ? " / " + ctxDrawer.cell.nUnspecified + " Unspecified" : "") +
+          " (studies)"),
+        (ctxDrawer.cell.sources || []).slice().sort((a, b) => {
+          const rank = d => d === "Up" ? 0 : d === "Down" ? 1 : 2;
+          return rank(a.dir) - rank(b.dir) || String(a.pmid || "").localeCompare(String(b.pmid || "")) || String(a.gl || "").localeCompare(String(b.gl || ""));
+        }).map((s, i) => {
+          const open = openList === (s.gl + ":" + i);
+          const pmidHref = s.pmid ? ("https://pubmed.ncbi.nlm.nih.gov/" + s.pmid) : (s.doi ? ("https://doi.org/" + s.doi) : null);
+          const header = h("div", Object.assign({}, this.pressable(() => setOpenList(open ? null : s.gl + ":" + i)), { style: { padding: 11, cursor: "pointer", background: open ? C.cfBg : C.bg } }),
+            h("div", { style: { display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" } },
+              pmidHref
+                ? h("a", { href: pmidHref, target: "_blank", rel: "noreferrer", onClick: e => e.stopPropagation(), style: { fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.blue, textDecoration: "none", fontWeight: 600 } }, s.pmid ? ("[PMID: " + s.pmid + "]") : ("[DOI: " + s.doi + "]"))
+                : h("span", { style: { fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.mut } }, s.gl),
+              h("span", { style: { fontSize: 14, fontWeight: 700, color: s.dir === "Up" ? "#d6453f" : s.dir === "Down" ? "#2f6fb0" : C.mut } }, s.dir === "Up" ? "\u2191 Up" : s.dir === "Down" ? "\u2193 Down" : "Unspecified")),
+            h("div", { style: { fontSize: 14, fontWeight: 500, margin: "4px 0 2px", display: "flex", alignItems: "center", gap: 6 } },
+              h("span", { style: { color: C.mut, fontSize: 12, transform: open ? "rotate(90deg)" : "none", transition: "transform .15s" } }, "\u25b6"),
+              h("span", null, s.short)),
+            h("div", { style: { fontSize: 12, color: C.mut } }, s.author));
+          const details = open ? h("div", { style: { padding: "0 11px 11px", borderTop: "1px solid " + C.line2, display: "flex", flexDirection: "column", gap: 8 } },
+            s.title ? h("div", { style: { marginTop: 9 } }, h("div", { style: { fontSize: 12, fontWeight: 700, color: C.mut, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 2 } }, "Description"), h("div", { style: { fontSize: 12, color: C.ink, lineHeight: 1.45 } }, s.title)) : null,
+            h("div", { style: { display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: 12 } },
+              s.n ? h("div", null, h("span", { style: { color: C.mut } }, "List size: "), h("span", { style: { color: C.ink, fontWeight: 500, fontFamily: "'IBM Plex Mono',monospace" } }, s.n)) : null,
+              s.studyType ? h("div", null, h("span", { style: { color: C.mut } }, "Method: "), h("span", { style: { color: C.ink, fontWeight: 500 } }, s.studyType)) : null,
+              s.contrast ? h("div", null, h("span", { style: { color: C.mut } }, "Contrast: "), h("span", { style: { color: C.ink, fontWeight: 500 } }, s.contrast)) : null,
+              s.genetic ? h("div", null, h("span", { style: { color: C.mut } }, "Model: "), h("span", { style: { color: C.ink, fontWeight: 500 } }, s.genetic)) : null,
+              s.gl ? h("div", null, h("span", { style: { color: C.mut } }, "List: "), h("span", { style: { color: C.ink, fontWeight: 500, fontFamily: "'IBM Plex Mono',monospace" } }, s.gl)) : null,
+              s.fdr != null ? h("div", null, h("span", { style: { color: C.mut } }, "List FDR: "), h("span", { style: { color: C.ink, fontWeight: 500, fontFamily: "'IBM Plex Mono',monospace" } }, s.fdr < 0.001 ? s.fdr.toExponential(1) : Number(s.fdr).toFixed(3))) : null,
+              s.process ? h("div", null, h("span", { style: { color: C.mut } }, "Process: "), h("span", { style: { color: C.ink, fontWeight: 500 } }, s.process)) : null),
+            s.notes ? h("div", { style: { fontSize: 12, color: C.sub, lineHeight: 1.45, fontStyle: "italic" } }, s.notes) : null,
+            h("div", { style: { display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" } },
+              s.doi ? h("a", { href: "https://doi.org/" + s.doi, target: "_blank", rel: "noreferrer", onClick: e => e.stopPropagation(), style: { fontSize: 12, color: C.blue, textDecoration: "none", fontWeight: 500 } }, "DOI \u2197") : null,
+              s.pmid ? h("a", { href: "https://pubmed.ncbi.nlm.nih.gov/" + s.pmid, target: "_blank", rel: "noreferrer", onClick: e => e.stopPropagation(), style: { fontSize: 12, color: C.blue, textDecoration: "none", fontWeight: 500 } }, "PubMed \u2197") : null)) : null;
+          return h("div", { key: s.gl + ":" + i, style: { border: "1px solid " + (open ? C.cfLine : C.line), borderRadius: 8, background: C.bg, overflow: "hidden" } }, header, details);
+        })) : null;
+      const rail = h("div", { style: { width: 300, flex: "0 0 auto", borderRight: "1px solid " + C.line, background: C.bg, padding: 18, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 } },
+        h("div", null, railLabel("Genes to profile", parseCount(ctxText) + " parsed"), railTextarea(p.ctxInput || ctxText, (v) => p.setCtxInput(v), "Paste HGNC symbols\u2026")),
+        !parseCount(ctxText) && exampleBtn("contexts"),
+        railBtn("Build matrix", () => { if (!parseCount(p.ctxInput) && ctxText) p.setCtxInput(ctxText); p.runContexts(ctxText); }, true),
+        h("button", { onClick: () => { if (p.searchRes) { const g = [...new Set(p.searchRes.rows.filter(r => r.fdr < 0.05).flatMap(r => r.overlap))]; p.setCtxInput(g.join("\n")); p.runContexts(g.join("\n")); } }, style: { width: "100%", border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "9px", fontSize: 14, cursor: "pointer" } }, "Load from search hits"),
+        loadFromLists(p.setCtxInput),
+        h("div", { style: { borderTop: "1px solid " + C.line2, paddingTop: 14, fontSize: 12, color: C.mut, lineHeight: 1.6 } }, "Each cell is the joint context of a gene in a cell type and brain region. Counts are unique studies. List FDR is the Gene Search enrichment score for each curated list: it keeps or drops whole lists, then the matrix is redrawn. Contexts themselves are not statistical tests."));
+      const header = h("div", { style: { padding: "12px 20px", borderBottom: "1px solid " + C.line, background: C.bg, display: "flex", flexDirection: "column", gap: 12, flex: "0 0 auto" } },
+        h("div", { className: "gdx-ctx-banner", role: "note" }, "The Context Matrix maps your genes across brain regions and cell types. It acts as an evidence lookup to give you a snapshot of where scientific studies agree or disagree."),
+        h("div", { style: { display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" } },
+          h("div", { style: { fontSize: 14, fontWeight: 600 } }, "Context Matrix"),
+          res ? h("div", { style: { fontSize: 14, color: C.sub } },
+            rows.length + " context" + (rows.length === 1 ? "" : "s") + " \u00d7 " + genes.length + " gene" + (genes.length === 1 ? "" : "s") + " \u00b7 ",
+            h("b", { style: { fontFamily: "'IBM Plex Mono',monospace", color: C.ink } }, nListsShown),
+            " list" + (nListsShown === 1 ? "" : "s") + " drawing this matrix") : null,
+          infoChips,
+          h("div", { style: { flex: 1 } }),
+          h("div", { style: { display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: C.sub } },
+            h("span", { className: "gdx-ctx-up" }, "\u25B2 Up"),
+            h("span", { className: "gdx-ctx-dn" }, "\u25BC Down"),
+            h("span", { className: "gdx-ctx-conflict" }, "\u26A0 Conflict"))),
+        h("div", { className: "gdx-ctx-filters" },
+          h("div", { className: "gdx-ctx-field" },
+            h("label", { htmlFor: "gdx-ctx-process" }, "AD Process"),
+            h("select", { id: "gdx-ctx-process", className: "gdx-ctx-select", style: selectStyle, value: p.ctxOpts.process, onChange: e => p.setCtxOpts(o => ({ ...o, process: e.target.value })) },
+              h("option", { value: "" }, "All Processes"),
+              processes.map(f => h("option", { key: f, value: f }, f)))),
+          h("div", { className: "gdx-ctx-field" },
+            h("label", { htmlFor: "gdx-ctx-min" }, "Min Studies"),
+            h("select", { id: "gdx-ctx-min", className: "gdx-ctx-select", style: selectStyle, value: String(p.ctxOpts.minStudies), onChange: e => p.setCtxOpts(o => ({ ...o, minStudies: +e.target.value })) },
+              h("option", { value: "1" }, "1+"),
+              h("option", { value: "2" }, "2+"))),
+          h("div", { className: "gdx-ctx-field" },
+            h("label", { htmlFor: "gdx-ctx-dir" }, "Direction"),
+            h("select", { id: "gdx-ctx-dir", className: "gdx-ctx-select", style: selectStyle, value: ctxOpts.direction, onChange: e => p.setCtxOpts(o => ({ ...o, direction: e.target.value })) },
+              h("option", { value: "Any" }, "Any"),
+              h("option", { value: "Up" }, "Up"),
+              h("option", { value: "Down" }, "Down"),
+              h("option", { value: "Conflicting" }, "Conflicting"))),
+          h("div", { className: "gdx-ctx-field" },
+            h("label", { htmlFor: "gdx-ctx-fdr", title: "Shared with Gene Search. One enrichment FDR per curated list against your query. It does not test cells or contexts." }, "List FDR \u2264"),
+            h("div", { style: { display: "flex", alignItems: "center", gap: 8, height: 36 } },
+              h("input", { id: "gdx-ctx-fdr", type: "range", min: 0, max: 1, step: 0.01, value: fdrMax, onChange: e => p.setSearchOpts(o => ({ ...o, fdr: +e.target.value })), style: { width: 120, accentColor: C.ff } }),
+              h("span", { style: { fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, width: 42, color: C.ink } }, Number(fdrMax).toFixed(2)),
+              res ? h("span", { style: { color: C.sig, fontWeight: 600, whiteSpace: "nowrap", fontSize: 12 } },
+                nListsPass === nListsAll
+                  ? "(" + nListsPass + " list" + (nListsPass === 1 ? "" : "s") + ")"
+                  : "(" + nListsPass + " of " + nListsAll + " lists)") : null)),
+          h("label", { className: "gdx-ctx-field", style: { flexDirection: "row", alignItems: "center", gap: 8, height: 36, cursor: "pointer" }, title: "Hide query genes with no remaining cells at the current filters" },
+            h("input", { type: "checkbox", checked: !!ctxOpts.hideEmptyGenes, onChange: e => p.setCtxOpts(o => ({ ...o, hideEmptyGenes: e.target.checked })), style: { accentColor: C.ff } }),
+            h("span", { style: { fontSize: 14, color: C.sub, textTransform: "none", letterSpacing: 0, fontWeight: 500 } }, "Hide empty genes"))));
+      return h("div", { style: { display: "flex", height: "100%", minHeight: 0 } },
+        rail,
+        h("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: C.canvas, position: "relative" } },
+          header,
+          h("div", { className: "gdx-ctx-wrap", style: { padding: 16 } }, matrix),
+          ctxDrawer ? this.DetailDrawer({ title: "Provenance", subtitle: ctxDrawer.gene + " \u00b7 " + ctxDrawer.row.label, type: "cf", onClose: () => { setCtxDrawer(null); setOpenList(null); }, body: provenanceBody }) : null));
+    };
+
     // ================= CO-TRAVEL =================
     const renderCotravel = () => {
       const res = p.ctRes;
@@ -1358,7 +1742,7 @@ class Component extends DCLogic {
       h("div", { style: { flex: 1, minHeight: 0 } },
         p.wbTab === "search" && renderSearch(),
         p.wbTab === "fingerprint" && renderFingerprint(),
-        null),
+        p.wbTab === "contexts" && renderContexts()),
       toast && h("div", { style: { position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: C.act, color: "#fff", padding: "9px 18px", borderRadius: 8, fontSize: 14, zIndex: 200, animation: "gdxfade .2s" } }, toast));
   };
 

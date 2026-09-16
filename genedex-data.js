@@ -2,7 +2,8 @@
    Genedex data + compute layer
    ----------------------------------------------------------------------------
    Client-side loader + compute. On GitHub Pages this fetches the bundled JSON
-   under data/ and runs enrichment / fingerprint / co-travel in the browser.
+   under data/ and runs enrichment / fingerprint / context matrix / co-travel
+   in the browser.
 
    Optional override (set before this script):
      window.GENEDEX_CONFIG = {
@@ -49,6 +50,7 @@
         similarity: "similarity.json",
         enrich: "enrich",
         fingerprint: "fingerprint",
+        contexts: "contexts",
         cotravel: "cotravel",
         modules: "modules",
       }, user.endpoints || {}),
@@ -394,6 +396,7 @@
         const overlap = ref.filter(g => input.has(g));
         if (overlap.length === 0 && !opts.keepEmpty) return;
         rows.push({ gl: l.gl, name: l.short, author: l.author, doi: l.doi, pmid: l.pmid, ff: l.ff, cf: l.cf, dir: l.dir,
+          tissue: l.tissue,
           nInput: n, nRef: K, nOverlap: overlap.length, overlap,
           p: hyperSF(overlap.length, N, K, n) });
       });
@@ -401,6 +404,155 @@
       rows.forEach((r, i) => r.fdr = q[i]);
       rows.sort((a, b) => a.fdr - b.fdr || b.nOverlap - a.nOverlap);
       return { rows, nInput: n, universe: N };
+    },
+    // Collapse a curated list (or a context source record) to a study identity.
+    // Same order as fingerprint: PMID, then DOI, then author+title, then GL id.
+    contextStudyKey(l) {
+      if (!l) return "L:";
+      if (l.study) return l.study;
+      if (l.pmid) return "P:" + l.pmid;
+      if (l.doi) return "D:" + l.doi;
+      if (l.author || l.title) return "A:" + (l.author || "") + "|" + (l.title || "");
+      return "L:" + (l.gl || "");
+    },
+    // Descriptive counts for one gene × (cell type × tissue) cell. No p / FDR.
+    summarizeContextCell(sources) {
+      const studies = new Set(), gls = new Set();
+      const dirStudies = { Up: new Set(), Down: new Set(), Unspecified: new Set() };
+      (sources || []).forEach(s => {
+        const sk = this.contextStudyKey(s);
+        studies.add(sk);
+        if (s.gl) gls.add(s.gl);
+        const d = s.dir === "Up" ? "Up" : s.dir === "Down" ? "Down" : "Unspecified";
+        dirStudies[d].add(sk);
+      });
+      const nUp = dirStudies.Up.size, nDown = dirStudies.Down.size, nUnspecified = dirStudies.Unspecified.size;
+      return {
+        nUp: nUp, nDown: nDown, nUnspecified: nUnspecified,
+        nStudies: studies.size,
+        nLists: gls.size,
+        isConflict: nUp > 0 && nDown > 0,
+        dirs: { Up: nUp, Down: nDown, Unspecified: nUnspecified },
+      };
+    },
+    // Joint evidence lookup: Process is retained for filtering; the matrix
+    // groups on cellType × tissue. Cells stay descriptive (no p / FDR on the
+    // cell). Optional opts.fdr prunes the list pool using enrichment FDR of
+    // the query against each curated list. Signature: contexts(geneList, corpus)
+    // or contexts(geneList, opts) or contexts(geneList, corpus, opts).
+    contexts(geneList, corpus, opts) {
+      if (corpus && !Array.isArray(corpus)) { opts = corpus; corpus = null; }
+      opts = opts || {};
+      const info = this.resolveInfo(geneList);
+      const genes = info.genes;
+      const gset = new Set(info.found);
+      let lists = Array.isArray(corpus) ? corpus : G.lists;
+      const fdrMax = opts.fdr == null ? 1 : Math.min(1, Math.max(0, +opts.fdr));
+      let fdrByGl = opts.fdrByGl || null;
+      if (!fdrByGl) {
+        const cacheKey = info.found.join("\0") + "|" + (opts.dir || "All");
+        if (!this._ctxFdrCache || this._ctxFdrCache.key !== cacheKey) {
+          const en = this.enrich(geneList, { dir: opts.dir || "All" });
+          const map = {};
+          en.rows.forEach(r => { map[r.gl] = r.fdr; });
+          this._ctxFdrCache = { key: cacheKey, map: map };
+        }
+        fdrByGl = this._ctxFdrCache.map;
+      }
+      const nListsOverlap = Object.keys(fdrByGl).length;
+      lists = lists.filter(l => {
+        if (fdrByGl[l.gl] == null) return false;
+        if (fdrMax < 1 && fdrByGl[l.gl] > fdrMax) return false;
+        return true;
+      });
+      const nListsPassFdr = lists.length;
+      const dirOf = (l) => l.dir === "Up" ? "Up" : l.dir === "Down" ? "Down" : "Unspecified";
+      const ctxMap = new Map();
+      lists.forEach(l => {
+        if (!gset.size) return;
+        const hits = (l.genes || []).filter(g => gset.has(g));
+        if (!hits.length) return;
+        const tissue = l.tissue || "Unspecified";
+        const cts = (l.cfAtoms && l.cfAtoms.length) ? l.cfAtoms : ["Unspecified"];
+        const processes = (l.ffAtoms && l.ffAtoms.length) ? l.ffAtoms.slice() : [];
+        const process = processes[0] || "";
+        const dir = dirOf(l);
+        const study = this.contextStudyKey(l);
+        const srcBase = {
+          gl: l.gl,
+          pmid: l.pmid || "",
+          doi: l.doi || "",
+          dir: dir,
+          short: l.short || l.name || l.gl,
+          author: l.author || "",
+          title: l.title || "",
+          tissue: tissue,
+          process: process,
+          processes: processes,
+          studyType: l.studyType || "",
+          notes: l.notes || "",
+          n: (typeof l.n === "number" && l.n > 0) ? l.n : ((l.genes && l.genes.length) || 0),
+          genetic: l.genetic || "",
+          contrast: l.contrast || "",
+          listType: l.listType || "",
+          study: study,
+          fdr: fdrByGl ? fdrByGl[l.gl] : undefined,
+        };
+        hits.forEach(gene => {
+          cts.forEach(cellType => {
+            const id = cellType + "\t" + tissue;
+            let row = ctxMap.get(id);
+            if (!row) {
+              row = { id: id, cellType: cellType, tissue: tissue, label: cellType + " / " + tissue, processes: new Set(), cells: {} };
+              ctxMap.set(id, row);
+            }
+            processes.forEach(f => row.processes.add(f));
+            let cell = row.cells[gene];
+            if (!cell) { cell = { gene: gene, sources: [] }; row.cells[gene] = cell; }
+            cell.sources.push(Object.assign({ gene: gene, cellType: cellType }, srcBase));
+          });
+        });
+      });
+      const processSet = new Set();
+      const rows = [];
+      ctxMap.forEach(row => {
+        row.processes.forEach(f => processSet.add(f));
+        const cells = {};
+        let nGenes = 0, nConflicts = 0;
+        genes.forEach(g => {
+          const raw = row.cells[g];
+          if (!raw) return;
+          const stats = this.summarizeContextCell(raw.sources);
+          cells[g] = Object.assign({ gene: g, sources: raw.sources }, stats);
+          nGenes++;
+          if (stats.isConflict) nConflicts++;
+        });
+        rows.push({
+          id: row.id,
+          cellType: row.cellType,
+          tissue: row.tissue,
+          label: row.label,
+          processes: Array.from(row.processes).sort(),
+          nGenes: nGenes,
+          nConflicts: nConflicts,
+          cells: cells,
+        });
+      });
+      rows.sort((a, b) => b.nGenes - a.nGenes || a.cellType.localeCompare(b.cellType) || a.tissue.localeCompare(b.tissue));
+      return {
+        genes: genes,
+        found: info.found,
+        missing: info.missing,
+        remapped: info.remapped,
+        rows: rows,
+        processes: Array.from(processSet).sort(),
+        nContexts: rows.length,
+        nInput: genes.length,
+        nListsOverlap: nListsOverlap,
+        nListsPassFdr: nListsPassFdr,
+        nListsKept: nListsPassFdr,
+        fdr: fdrMax,
+      };
     },
     // Fingerprint matrix: rows=genes, cols=facets.
     //
@@ -1332,6 +1484,10 @@
       if (G.config.mode === "api" && G.config.apiBase) return apiQuery("fingerprint", { genes: genes, opts: opts });
       return compute.fingerprint(genes, opts);
     },
+    async contexts(genes, corpus, opts) {
+      if (G.config.mode === "api" && G.config.apiBase) return apiQuery("contexts", { genes: genes, corpus: corpus, opts: opts });
+      return compute.contexts(genes, corpus, opts);
+    },
     async cotravelTest(gene, opts, onProgress) {
       if (G.config.mode === "api" && G.config.apiBase) return apiQuery("cotravel", { gene: gene, opts: opts });
       return compute.cotravelTest(gene, opts, onProgress);
@@ -1583,4 +1739,100 @@
   })();
 
   window.Genedex = G;
+})();
+
+(function () {
+  "use strict";
+  const G = window.Genedex;
+  if (!G || !G.compute) return;
+  if (typeof G.compute.contexts !== "function") {
+    G.compute.contextStudyKey = function (l) {
+      if (!l) return "L:";
+      if (l.study) return l.study;
+      if (l.pmid) return "P:" + l.pmid;
+      if (l.doi) return "D:" + l.doi;
+      if (l.author || l.title) return "A:" + (l.author || "") + "|" + (l.title || "");
+      return "L:" + (l.gl || "");
+    };
+    G.compute.summarizeContextCell = function (sources) {
+      const studies = new Set(), gls = new Set();
+      const dirStudies = { Up: new Set(), Down: new Set(), Unspecified: new Set() };
+      (sources || []).forEach(s => {
+        const sk = this.contextStudyKey(s);
+        studies.add(sk);
+        if (s.gl) gls.add(s.gl);
+        const d = s.dir === "Up" ? "Up" : s.dir === "Down" ? "Down" : "Unspecified";
+        dirStudies[d].add(sk);
+      });
+      const nUp = dirStudies.Up.size, nDown = dirStudies.Down.size, nUnspecified = dirStudies.Unspecified.size;
+      return {
+        nUp: nUp, nDown: nDown, nUnspecified: nUnspecified,
+        nStudies: studies.size, nLists: gls.size,
+        isConflict: nUp > 0 && nDown > 0,
+        dirs: { Up: nUp, Down: nDown, Unspecified: nUnspecified },
+      };
+    };
+    G.compute.contexts = function (geneList, corpus) {
+      const info = this.resolveInfo(geneList);
+      const genes = info.genes;
+      const gset = new Set(info.found);
+      const lists = (corpus && corpus.length) ? corpus : G.lists;
+      const dirOf = (l) => l.dir === "Up" ? "Up" : l.dir === "Down" ? "Down" : "Unspecified";
+      const ctxMap = new Map();
+      lists.forEach(l => {
+        if (!gset.size) return;
+        const hits = (l.genes || []).filter(g => gset.has(g));
+        if (!hits.length) return;
+        const tissue = l.tissue || "Unspecified";
+        const cts = (l.cfAtoms && l.cfAtoms.length) ? l.cfAtoms : ["Unspecified"];
+        const processes = (l.ffAtoms && l.ffAtoms.length) ? l.ffAtoms.slice() : [];
+        const process = processes[0] || "";
+        const dir = dirOf(l);
+        const study = this.contextStudyKey(l);
+        const srcBase = {
+          gl: l.gl, pmid: l.pmid || "", doi: l.doi || "", dir: dir,
+          short: l.short || l.name || l.gl, author: l.author || "", title: l.title || "",
+          tissue: tissue, process: process, processes: processes,
+          studyType: l.studyType || "", notes: l.notes || "",
+          n: (typeof l.n === "number" && l.n > 0) ? l.n : ((l.genes && l.genes.length) || 0),
+          genetic: l.genetic || "", contrast: l.contrast || "", listType: l.listType || "", study: study,
+        };
+        hits.forEach(gene => {
+          cts.forEach(cellType => {
+            const id = cellType + "\t" + tissue;
+            let row = ctxMap.get(id);
+            if (!row) {
+              row = { id: id, cellType: cellType, tissue: tissue, label: cellType + " / " + tissue, processes: new Set(), cells: {} };
+              ctxMap.set(id, row);
+            }
+            processes.forEach(f => row.processes.add(f));
+            let cell = row.cells[gene];
+            if (!cell) { cell = { gene: gene, sources: [] }; row.cells[gene] = cell; }
+            cell.sources.push(Object.assign({ gene: gene, cellType: cellType }, srcBase));
+          });
+        });
+      });
+      const processSet = new Set();
+      const rows = [];
+      ctxMap.forEach(row => {
+        row.processes.forEach(f => processSet.add(f));
+        const cells = {};
+        let nGenes = 0, nConflicts = 0;
+        genes.forEach(g => {
+          const raw = row.cells[g];
+          if (!raw) return;
+          const stats = this.summarizeContextCell(raw.sources);
+          cells[g] = Object.assign({ gene: g, sources: raw.sources }, stats);
+          nGenes++;
+          if (stats.isConflict) nConflicts++;
+        });
+        rows.push({ id: row.id, cellType: row.cellType, tissue: row.tissue, label: row.label, processes: Array.from(row.processes).sort(), nGenes: nGenes, nConflicts: nConflicts, cells: cells });
+      });
+      rows.sort((a, b) => b.nGenes - a.nGenes || a.cellType.localeCompare(b.cellType) || a.tissue.localeCompare(b.tissue));
+      return { genes: genes, found: info.found, missing: info.missing, remapped: info.remapped, rows: rows, processes: Array.from(processSet).sort(), nContexts: rows.length, nInput: genes.length };
+    };
+  }
+  if (G.query && typeof G.query.contexts !== "function") {
+    G.query.contexts = async function (genes, corpus) { return G.compute.contexts(genes, corpus); };
+  }
 })();
