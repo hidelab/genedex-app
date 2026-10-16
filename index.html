@@ -28,6 +28,8 @@
   textarea{resize:vertical}
   .gdx-hero-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,.78fr);gap:28px;align-items:start}
   .gdx-hero-pad{padding:36px 32px 48px}
+  .gdx-intro-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(70px,110px) auto minmax(70px,110px) minmax(0,1.15fr);gap:14px;align-items:center}
+  @media (max-width:960px){.gdx-intro-grid{grid-template-columns:minmax(0,1fr)}.gdx-intro-arrow{justify-self:center;width:120px;padding:4px 0}.gdx-intro-line{transform:rotate(90deg);width:44px!important;margin:10px 0}}
   .gdx-home-banner-wrap{background:#f3f6fa;border-bottom:1px solid #e6e9ed}
   .gdx-home-banner{display:block;width:100%;max-width:1200px;height:auto;margin:0 auto}
   .gdx-hero-title{font-size:32px;font-weight:600;letter-spacing:-.02em;line-height:1.25;margin:0;color:#1b2129}
@@ -184,7 +186,7 @@ class Component extends DCLogic {
         const q = new URLSearchParams(window.location.search);
         const tabRaw = (q.get("tab") || "home").toLowerCase();
         const viewRaw = (q.get("view") || "").toLowerCase();
-        const tabsOk = { home: "home", workbench: "workbench", search: "workbench", fingerprint: "workbench", contexts: "workbench", context: "workbench", network: "network", download: "download", docs: "docs", about: "about" };
+        const tabsOk = { home: "home", workbench: "workbench", search: "workbench", fingerprint: "workbench", contexts: "workbench", context: "workbench", download: "download", docs: "docs", about: "about" };
         const viewsOk = { search: "search", fingerprint: "fingerprint", contexts: "contexts", context: "contexts" };
         const dirMap = { all: "All", up: "Up", down: "Down" };
         const genes = (q.get("genes") || "").split(/[,\s;]+/).map(s => s.trim()).filter(Boolean);
@@ -388,8 +390,7 @@ class Component extends DCLogic {
     return h("div", { style: { height: "100vh", display: "flex", flexDirection: "column", background: C.canvas } },
       h(this.NavBar, { key: "nav-" + tab, ...shared, legendOpen, setLegendOpen, devMode, setDevOpen }),
       h("main", { id: "main", tabIndex: -1, style: { flex: 1, minHeight: 0, position: "relative", outline: "none" } },
-        tab === "network" ? h(this.NetworkModule, { key: "network", ...shared })
-          : tab === "docs" ? h(this.DocsModule, { key: "docs", ...shared })
+        tab === "docs" ? h(this.DocsModule, { key: "docs", ...shared })
           : tab === "about" ? h(this.AboutModule, { key: "about", ...shared })
           : tab === "download" ? h(this.DownloadModule, { key: "download", ...shared })
           : tab === "home" ? h(this.HomeModule, { key: "home", ...shared })
@@ -461,11 +462,11 @@ class Component extends DCLogic {
           ["Direction", "Restrict the corpus to up-, down-, or all-direction lists before testing."],
           ["FDR slider", "Hides rows above the chosen FDR. At 1.00 nothing is hidden."],
           ["Filter facet", "Free-text match against a row's facet labels. It filters the table, it does not change the statistics."],
-          ["Row actions", "Copy the overlapping genes, or push them straight into Gene Fingerprint."]
+          ["Row actions", "Copy the overlapping genes, or push them straight into Gene Print."]
         ] }),
         h(FIG, { src: "docs/gene-search.png", caption: "Gene Search after running the example set. The rail holds the query and the direction filter; each result row is one curated list, sorted by FDR. Clicking a row opens the overlapping genes." })),
 
-      h(S, { key: "fp", kicker: "Module", title: "Gene Fingerprint", accent: C.ff },
+      h(S, { key: "fp", kicker: "Module", title: "Gene Print", accent: C.ff },
         h("p", { style: { margin: 0 } }, "A heatmap of genes against facets. Each cell counts how many lists under that facet contain the gene, so a row reads as one gene's profile across the literature and a column reads as one facet's recurring genes."),
         h(DL, { items: [
           ["Counting unit", "Study collapses multiple lists from one paper into a single count. List counts each list separately, which inflates well-published facets."],
@@ -477,7 +478,7 @@ class Component extends DCLogic {
           ["Tissue counts", "Each tissue reads hits / lists: how many of your genes match that tissue's lists, over how many lists survive the active restrictions."],
           ["Clicking a cell", "Opens the lists behind that count, with author, DOI and PubMed links."]
         ] }),
-        h(FIG, { src: "docs/gene-fingerprint.png", caption: "Gene Fingerprint with Facet class set to Functional and the # Lists scale. Genes run down the rows, facets across the columns; darker cells mean the gene appears in more of that facet\u2019s lists. Set Facet class to All to add the cellular and tissue bands." }),
+        h(FIG, { src: "docs/gene-fingerprint.png", caption: "Gene Print with Facet class set to Functional and the # Lists scale. Genes run down the rows, facets across the columns; darker cells mean the gene appears in more of that facet\u2019s lists. Set Facet class to All to add the cellular and tissue bands." }),
         h("p", { style: { margin: 0, color: C.sub, fontSize: 14 } }, "Exports sit pinned at the bottom of the rail: Download CSV for the matrix as displayed, PNG for the figure, and Refs CSV for the source list behind every non-empty cell. Grid keeps the matrix shape, Long gives one row per gene, facet and list, which is the easier form to filter into a citation set.")),
 
       h(S, { key: "ctx", kicker: "Module", title: "Context Matrix", accent: C.cf },
@@ -490,10 +491,6 @@ class Component extends DCLogic {
           ["Provenance", "Click a filled cell for the supporting studies, PubMed links, reported direction, method, and list ID. The summary counts unique studies and unique lists; Up / Down / Unspecified are unique studies with that reported direction (one paper can appear in both if it has Up and Down lists)."],
         ] })),
 
-      h(S, { key: "net", kicker: "Module", title: "Facets Network", accent: C.tf },
-        h("p", { style: { margin: 0 } }, "Facets as nodes, joined when they share genes. It shows how the annotation vocabulary itself is organised: which biology co-occurs, and which facets are effectively redundant because their gene membership is near-identical."),
-        h(FIG, { src: "docs/facets-network.png", caption: "Facets Network at its default threshold. Teal circles are functional facets, amber diamonds cellular ones; node size tracks how many lists carry the facet. Raise Min shared genes to thin the edges, or scroll to zoom into a region." }),
-        h("p", { style: { margin: 0, color: C.sub, fontSize: 14 } }, "Edge threshold and significance controls set how much shared membership is needed before two facets are drawn as connected; community detection groups the facets that hang together.")),
 
       h(S, { key: "lists", kicker: "Workspace", title: "My Lists", accent: C.ink },
         h("p", { style: { margin: 0 } }, "Any gene set you paste or derive can be saved to My Lists for the session and reloaded into another module, so one result can be carried across Search, Fingerprint and Context Matrix without retyping.")),
@@ -577,7 +574,7 @@ class Component extends DCLogic {
   // =====================================================================
   NavBar = (p) => {
     const h = React.createElement, C = this.C, G = window.Genedex;
-    const tabs = [["home", "Home"], ["workbench", "Gene Workbench"], ["network", "Facets Network"], ["download", "Download"], ["docs", "Documentation"], ["about", "About"]];
+    const tabs = [["home", "Home"], ["workbench", "Gene Workbench"], ["download", "Download"], ["docs", "Documentation"], ["about", "About"]];
     const tabBtn = ([id, label]) => h("button", {
       key: id, onClick: () => p.setTab(id),
       style: { border: "none", background: p.tab === id ? C.bg : "transparent", color: p.tab === id ? C.ink : C.sub,
@@ -635,9 +632,8 @@ class Component extends DCLogic {
       { value: "Multi-cohort", label: "Human Brain" },
     ];
     const cards = [
-      { tag: "Profile", title: "Gene Fingerprint", desc: "Profile a gene set across facets and reference lists at once.", accent: C.cf, accentBg: C.cfBg, go: () => { p.setTab("workbench"); p.setWbTab("fingerprint"); } },
+      { tag: "Profile", title: "Gene Print", desc: "Profile a gene set across facets and reference lists at once.", accent: C.cf, accentBg: C.cfBg, go: () => { p.setTab("workbench"); p.setWbTab("fingerprint"); } },
       { tag: "Context", title: "Context Matrix", desc: "See where query genes change by cell type, brain region and direction.", accent: C.cf, accentBg: C.cfBg, go: () => { p.setTab("workbench"); p.setWbTab("contexts"); } },
-      { tag: "Explore", title: "Facets Network", desc: "See how facets relate to each other by the genes they share.", accent: C.tf, accentBg: C.tfBg, go: () => p.setTab("network") },
     ];
 
     const runAnalyze = async (text) => {
@@ -654,12 +650,7 @@ class Component extends DCLogic {
     };
 
     return h("div", { style: { height: "100%", overflowY: "auto", background: C.canvas } },
-      h("div", { className: "gdx-home-banner-wrap" },
-        h("img", {
-          className: "gdx-home-banner",
-          src: "./images/banner.png",
-          alt: "The Genedex discovery platform: paste a query gene list, search curated Alzheimer\u2019s disease signatures, and get ranked gene search results.",
-        })),
+      h(this.IntroPanel, { C, h, genes: parsed, nLists: G.lists.length, nFacets, busy, onSearch: () => runAnalyze(draft), onFocus: () => { const el = document.getElementById("gdx-hero-genes"); if (el) el.focus(); } }),
       h("section", { "aria-labelledby": "gdx-hero-title", style: { position: "relative", overflow: "hidden", background: C.bg, borderBottom: "1px solid " + C.line } },
         h("div", { className: "gdx-hero-pad", style: { position: "relative", maxWidth: 1080, margin: "0 auto" } },
           h("div", { className: "gdx-hero-grid" },
@@ -919,7 +910,7 @@ class Component extends DCLogic {
     const parseCount = (t) => G.compute.norm((t || "").split(/[\s,;]+/)).length;
     const fmtP = (v) => v < 0.0001 ? v.toExponential(1) : v.toFixed(4);
 
-    const subTabs = [["search", "Gene Search"], ["fingerprint", "Gene Fingerprint"], ["contexts", "Context Matrix"]];
+    const subTabs = [["search", "Gene Search"], ["fingerprint", "Gene Print"], ["contexts", "Context Matrix"]];
 
     // ---- left rail building block ----
     const railTextarea = (val, setVal, ph) => h("textarea", { value: val, onChange: e => setVal(e.target.value), placeholder: ph,
@@ -1130,9 +1121,7 @@ class Component extends DCLogic {
                 : "Counting raw lists. Multiple lists from one paper each count separately.")),
           h("div", null, railLabel("Scale", null, "How cells are shaded: Presence marks any hit, # Lists shades by how many lists contain the gene, Up / Down colours by reported direction."), h(this.Seg, { value: p.fpOpts.mode, onChange: v => p.setFpOpts(o => ({ ...o, mode: v })), options: [{ v: "binary", l: "Presence" }, { v: "count", l: "# Lists" }, { v: "direction", l: "Up / Down" }] })),
           p.fpOpts.mode === "direction" && h("div", { style: { display: "flex", gap: 12, fontSize: 12, color: C.sub, padding: "0 2px" } },
-            h("span", { style: { display: "flex", alignItems: "center", gap: 5 } }, h("span", { style: { width: 11, height: 11, borderRadius: 3, background: "#d6453f" } }), "Up-regulated"),
-            h("span", { style: { display: "flex", alignItems: "center", gap: 5 } }, h("span", { style: { width: 11, height: 11, borderRadius: 3, background: "#2f6fb0" } }), "Down"),
-            h("span", { style: { display: "flex", alignItems: "center", gap: 5 } }, h("span", { style: { width: 11, height: 11, borderRadius: 3, background: "#8a5bb8" } }), "Mixed")),
+            h("span", null, "Down"), h("span", { style: { flex: "0 0 110px", height: 11, borderRadius: 3, background: "linear-gradient(90deg, rgb(33,102,172), rgb(235,228,232), rgb(196,40,50))", boxShadow: "inset 0 0 0 1px rgba(20,30,50,.08)" } }), h("span", null, "Up")),
           h("div", null, railLabel("Direction filter", null, "Restricts the corpus to up-regulated, down-regulated or all lists before anything is counted."), h(this.Seg, { value: p.fpOpts.dir, onChange: v => { const no = { ...p.fpOpts, dir: v }; p.setFpOpts(no); p.runFingerprint(p.fpInput, no); }, options: [{ v: "All", l: "All" }, { v: "Up", l: "Up" }, { v: "Down", l: "Down" }], accent: C.ff })),
           h("div", null, railLabel("Facet class", null, "Which facet family forms the matrix columns: all three, functional, cellular or tissue."), h(this.Seg, { value: p.fpOpts.facetClass || "both", onChange: v => { const no = { ...p.fpOpts, facetClass: v }; if (v !== "ff" && v !== "tf") no.restrictCf = []; if (v !== "cf" && v !== "tf") no.restrictFf = []; const had = (p.fpOpts.restrictCf || []).length || (p.fpOpts.restrictFf || []).length; p.setFpOpts(no); if (had) p.runFingerprint(p.fpInput, no); }, options: [{ v: "both", l: "All" }, { v: "ff", l: "Functional" }, { v: "cf", l: "Cellular" }, { v: "tf", l: "Tissue" }], accent: C.ff })),
           ["both", "ff"].includes(p.fpOpts.facetClass || "both") && h("div", null, railLabel("Functional facet", p.fpOpts.funcFacets && p.fpOpts.funcFacets.length ? p.fpOpts.funcFacets.length + " of " + G.ffFacets.length : "all", "Chooses which functional facet columns are displayed. It does not change which lists are counted."),
@@ -1226,7 +1215,7 @@ class Component extends DCLogic {
           )),
         h("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: C.canvas } },
           h("div", { style: { padding: "12px 20px", borderBottom: "1px solid " + C.line, background: C.bg, display: "flex", alignItems: "center", gap: 16, flex: "0 0 auto" } },
-            h("div", { style: { fontSize: 14, fontWeight: 600 } }, "Gene Fingerprint"),
+            h("div", { style: { fontSize: 14, fontWeight: 600 } }, "Gene Print"),
             res && h("div", { style: { fontSize: 14, color: C.sub } }, viewRes.rows.length + " genes \u00d7 " + (viewRes.ffCols.length + viewRes.cfCols.length + (viewRes.tfCols || []).length) + " facets" + (p.fpOpts.cluster && viewRes.clusterCount ? " \u00b7 " + viewRes.clusterCount + " clusters" : "")),
             res && (() => {
               const info = G.compute.resolveInfo(p.fpInput);
@@ -1240,7 +1229,7 @@ class Component extends DCLogic {
               h("span", null, "Clusters"),
               h("div", { style: { display: "flex", gap: 3 } }, Array.from({ length: viewRes.clusterCount }).map((_, i) => h("span", { key: i, title: "Cluster " + (i + 1), style: { width: 11, height: 11, borderRadius: 3, background: this.CLUST[i % this.CLUST.length] } })))) : null,
             h("div", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.sub } }, p.fpOpts.mode === "direction"
-              ? [h("span", { key: "u", style: { display: "flex", alignItems: "center", gap: 4 } }, h("span", { style: { width: 9, height: 9, borderRadius: 2, background: "#d6453f" } }), "Up"), h("span", { key: "d", style: { display: "flex", alignItems: "center", gap: 4, marginLeft: 8 } }, h("span", { style: { width: 9, height: 9, borderRadius: 2, background: "#2f6fb0" } }), "Down"), h("span", { key: "m", style: { display: "flex", alignItems: "center", gap: 4, marginLeft: 8 } }, h("span", { style: { width: 9, height: 9, borderRadius: 2, background: "#8a5bb8" } }), "Mixed")]
+              ? [h("span", { key: "dn" }, "Down"), h("span", { key: "g", style: { width: 120, height: 9, borderRadius: 3, background: "linear-gradient(90deg, rgb(33,102,172), rgb(235,228,232), rgb(196,40,50))", boxShadow: "inset 0 0 0 1px rgba(20,30,50,.08)" } }), h("span", { key: "up" }, "Up")]
               : [h("span", { key: "f", style: { width: 9, height: 9, borderRadius: "50%", background: C.ff } }), "Functional", h("span", { key: "c", style: { width: 9, height: 9, background: C.cf, transform: "rotate(45deg)", marginLeft: 10 } }), "Cellular", h("span", { key: "t", style: { width: 9, height: 9, background: C.tf, borderRadius: 2, marginLeft: 10 } }), "Tissue"])),
           h("div", { style: { flex: 1, minHeight: 0, overflow: "auto", padding: 16 } },
             res && res.rows.length ? h(this.Heatmap, { res: viewRes, mode: p.fpOpts.mode, showSig: !!p.fpOpts.showSig, onCell: (gene, facet, type) => { setOpenList(null); setCellDrawer({ gene, facet, type, lists: G.compute.cellLists(gene, facet, { dir: p.fpOpts.dir, tissues: p.fpOpts.tissues, types: p.fpOpts.types, contrasts: p.fpOpts.contrasts, restrictFf: p.fpOpts.restrictFf, restrictCf: p.fpOpts.restrictCf }) }); } })
@@ -1969,7 +1958,7 @@ class Component extends DCLogic {
     // title
     ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
     ctx.fillStyle = C.ink; ctx.font = "600 18px 'IBM Plex Sans'";
-    ctx.fillText("Gene Fingerprint", PAD, PAD + 16);
+    ctx.fillText("Gene Print", PAD, PAD + 16);
     ctx.fillStyle = C.sub; ctx.font = "400 12px 'IBM Plex Sans'";
     const modeLbl = mode === "direction" ? "Up / Down" : (mode === "binary" ? "Presence" : "# Lists");
     ctx.fillText(res.rows.length + " genes \u00d7 " + (res.ffCols.length + res.cfCols.length + (res.tfCols || []).length) + " facets \u00b7 " + modeLbl + " scale", PAD, PAD + 36);
@@ -2029,171 +2018,185 @@ class Component extends DCLogic {
     const h = React.createElement, C = this.C;
     const { useRef, useEffect, useState } = React;
     const wrapRef = useRef(null), canvasRef = useRef(null);
-    const [hover, setHover] = useState(null); // {r,c,x,y,facet,type,gene,val}
-    const res = props.res, mode = props.mode;
-    const SECDEF = [
-      { t: "ff", cols: res.ffCols || [], label: "FUNCTIONAL", head: C.ffDark, tint: C.ff, rgb: [13, 148, 136] },
-      { t: "cf", cols: res.cfCols || [], label: "CELLULAR", head: C.cfDark, tint: C.cf, rgb: [217, 119, 6] },
-      { t: "tf", cols: res.tfCols || [], label: "TISSUE", head: C.tfDark, tint: C.tf, rgb: [79, 70, 229] },
-    ];
-    const secs = SECDEF.filter(s => s.cols.length > 0);
-    const cols = [];
-    secs.forEach(sec => sec.cols.forEach((f, i) => cols.push({ t: sec.t, i, facet: f, sec })));
-    const nCols = cols.length, nRows = res.rows.length;
-    const allFacets = cols.map(c => c.facet);
-    // measure longest facet label so the rotated header gutter fits the full name
-    const HDR_FONT = "500 12px 'IBM Plex Sans'";
-    const measW = (() => {
-      const m = document.createElement("canvas").getContext("2d");
-      m.font = HDR_FONT;
-      let mx = 0; allFacets.forEach(f => { const w = m.measureText(f).width; if (w > mx) mx = w; });
-      return mx;
-    })();
-    const HDR_ANGLE = Math.PI / 3; // -60deg
-    const gutterL = 112, cw = 20, ch = 22, divGap = secs.length > 1 ? 18 : 0;
-    // vertical room needed = label width * sin(angle) + section-label band + padding
-    const gutterT = Math.max(132, Math.ceil(measW * Math.sin(HDR_ANGLE)) + 30);
-    // sections laid out left to right, one divider gap between neighbours
-    let secX = gutterL;
-    secs.forEach(sec => { sec.x = secX; secX += sec.cols.length * cw + divGap; });
-    const gridR = secX - divGap;
-    const W = gridR + Math.ceil(measW * Math.cos(HDR_ANGLE)) + 16;
-    const H = gutterT + nRows * ch + 8;
-    const cellArr = (r, c, suffix) => res.rows[r][cols[c].t + suffix] || [];
-    let maxVal = 1; res.rows.forEach(r => cols.forEach(c => { const v = (r[c.t] || [])[c.i] || 0; if (v > maxVal) maxVal = v; }));
+    const [hover, setHover] = useState(null);
+    const [open, setOpen] = useState({});
+    const res = props.res, mode = props.mode, showSig = props.showSig, alpha = res.sigAlpha || 0.05;
+    const FORDER = this.FACET_ORDER || (this.FACET_ORDER = (() => {
+      const norm = x => String(x).toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/\u03b2/g, "beta").replace(/\(.*?\)?$/g, "").replace(/[^a-z0-9]/g, "");
+      const m = new Map();
+      ["AD (Alzheimer’s Disease)","Parkinson's disease","Dementia with Lewy bodies","Aβ","Aβ production","Aβ accumulation","Aβ aggregation","Aβ oligomers","Aβ plaques","Aβ clearance","Aβ degradation","Aβ uptake (phagocytosis)","Amyloid load (e.g., Thal)","Diffuse plaque load","Neuritic plaque load","Aβ42/40 ratio","Tau","Tau production","Tau processing","Tau phosphorylation","Tau hyperphosphorylation","Tau aggregation","Tau propagation","Tau clearance","Tau degradation","Tau seeding","Tau load (e.g., Braak)","Aging","Cognition","Cognitive impairment or decline","Cognitive Dysfunction","Cognitive resilience","AD resistance","Cognitive resistance","Neuronal mechanisms","Neurodegeneration","Apoptosis","Cellular senescence","Neurotoxicity","Neurogenesis","Oligodendrocytes maturation","Neuronal plasticity","Neuronal hyperexcitability","Selective vulnerability","Lipid metabolism","Lipid synthesis","Lipid transport","Oxidative degradation","Lipotoxicity","Energy metabolism","Glucose metabolism","Synapse","Synaptotoxicity","Synaptogenesis","Synaptic loss","Synaptic pruning","Synaptic homeostasis","Synaptosome","Synaptic vulnerability and resilience","Axon","Axotomy","Axonogenesis","Blood brain barrier (BBB)","BBB dysfunction","Cellular Stress response","Mitochondria","Mitochondrial dysfunction","Reactive oxygen species","Oxidative stress","Immune Response","Innate immune response","Interferon response","Adaptive immune response","Antigen presentation","Inflammation","Neuroinflammation","Systemic inflammation","Cytokines","Pro-inflammatory cytokines","Anti-inflammatory cytokines","Chemokines","Interleukins","Chemokines receptors","Microgliosis","Astrogliosis","Astrocytes recruitment","Microglial dysfunction","Microglial turnover","Microglia activation","Astrocytes activation","Neurons","Immature neurons","Cholinergic neurons","Excitatory neurons","Interneurons","Cortical neurons","Excitatory neurons/pyramidal neurons","Interneurons","Hippocampal neurons","Excitatory neurons","Interneurons","Entorhinal cortex neurons","Excitatory neurons","Interneurons","Projection neurons","Excitatory neurons","Interneurons","Dopaminergic neurons","SOX6+/AGTR1+ Dopaminergic neurons","SOX6+/PART1+ Dopaminergic neurons","SOX6+/DDT+ Dopaminergic neurons","SOX6+/GFRA2+ Dopaminergic neurons","CALB1+/CALCR+ Dopaminergic neurons","CALB1+/CRYM+/CCDC68+ Dopaminergic neurons","CALB1+/PPP1R17+ Dopaminergic neurons","CALB1+/RBP4+ Dopaminergic neurons","CALB1+/TRHR+ Dopaminergic neurons","CALB1+/GEM+ Dopaminergic neurons","Brain immune cells","Disease inflammatory macrophages (DIM","Microglia","Homeostatic microglia","Activated microglia","Microglia M1-type","Microglia M2-type","Disease associated microglia (DAM)","DAM stage 1","DAM stage 2","Human Alzheimer’s microglia (HAM)","Antiviral microglia","Cycling microglia","Glycolytic microglia","Lipid processing microglia","Neuronal surveillance microglia","Phagocytic microglia","Ribosome biogenesis microglia","Stress microglia","Aging microglia","Antigen presentation microglia","Inflammatory microglia","Inflammatory microglia high","Inflammatory microglia medium","Inflammatory microglia low","Amyloid-associated microglia","Tau-associated microglia","Astrocytes","Homeostatic astrocytes","Reactive Astrocyte","A1 astrocytes","A2 astrocytes","Oligodendrocytes","Oligodendrocyte progenitor cells (OPCs)","Vascular cells","Perivascular cells","Pericytes","SMCs (Vascular smooth muscle cells)","Endothelial cells","CPEC (Choroid plexus epithelial cells)","Peripheral Immune Cells","Neutrophils","Monocytes","Macrophages","Dendritic cells","Eosinophil","Mast cell","Basophil","Lymphocytes","T cells","CD4 T cells","CD8 T cells","B cells","NK cells (Natural Killer)","Brain","Cerebral Cortex","Frontal Cortex","Prefrontal Cortex","Prefrontal Cortex, Layer 2-3","Prefrontal Cortex, Layer 2-4","Prefrontal Cortex, Layer 4-5","Prefrontal Cortex, Layer 5","Prefrontal Cortex, Layer 5-6","Superior Frontal Gyrus","Entorhinal Cortex","Temporal Cortex","Inferior Temporal Gyrus","Parietal Cortex","Occipital Cortex","Primary Visual Cortex","Secondary Visual Cortex","Cingulate Cortex","Insular Cortex","Hippocampus","CA1 Region","CA2/CA3 Region","CA4","Dentate Gyrus","Subiculum","Subcortical structures","Basal Ganglia","Thalamus","Locus Coeruleus","Hypothalamus","Amygdala","Cerebellum","Midbrain","Choroid Plexus","Cerebrospinal Fluid (CSF)","Blood","Whole blood","Plasma","Serum","Gut","Retina","SH-SY5Y neuroblastoma cell line","Association","Risk increasing","Protective"].forEach((n, k) => { const key = norm(n); if (!m.has(key)) m.set(key, k); });
+      m.set("alzheimersdisease", 0);
+      return (f) => { const k = m.get(norm(f)); return k == null ? 1e6 : k; };
+    })());
+    const genes = res.rows, nG = genes.length;
+    const isMarker = (f) => /^[A-Za-z0-9.\-]+\+(\/[A-Za-z0-9.\-]+\+)?(\s|$)/.test(f);
+    const cellClass = (f) => { const l = f.toLowerCase();
+      if (/interneuron|inhibitory|\bsst|pvalb|\bvip|lamp5|sncg|chandelier/.test(l)) return "Inhibitory neurons";
+      if (/excitatory|pyramidal|granule/.test(l)) return "Excitatory neurons";
+      if (/microglia|macrophage|immune|t cells|b cells|monocyte|\bnk\b|lymphocyte/.test(l)) return "Microglia / immune";
+      if (/astrocyte/.test(l)) return "Astrocytes";
+      if (/opc|oligodendrocyte progenitor|oligodendrocyte precursor/.test(l)) return "OPCs";
+      if (/oligodendrocyte/.test(l)) return "Oligodendrocytes";
+      if (/endothelial|pericyte|perivascular|smc|smooth muscle|vascular|fibroblast/.test(l)) return "Vascular";
+      if (/neuron|neural/.test(l)) return "Neurons, unspecified";
+      return "Other"; };
+    const CORD = ["Excitatory neurons", "Inhibitory neurons", "Neurons, unspecified", "Astrocytes", "Microglia / immune", "Oligodendrocytes", "OPCs", "Vascular", "Other"];
+    const regClass = (f) => { const l = f.toLowerCase();
+      if (/prefrontal|frontal|dlpfc|brodmann area (8|9|10|44|45|46)\b/.test(l)) return "Prefrontal / frontal cortex";
+      if (/hippocamp|dentate|\bca[1-4]\b|subicul/.test(l)) return "Hippocampus";
+      if (/cortex|cortical|gyrus|lobe|temporal|parietal|occipital|entorhinal|cingulate|insula|precuneus|brodmann/.test(l)) return "Other cortex";
+      if (/striat|thalam|cerebell|caudate|putamen|substantia|brainstem|amygdala|nucleus|pons|medulla|hypothalam|basal ganglia|locus/.test(l)) return "Subcortical";
+      return "Non-regional"; };
+    const RORD = ["Prefrontal / frontal cortex", "Other cortex", "Hippocampus", "Subcortical"];
+    const leaf = (t, i, facet) => ({ t, i, facet });
+    const SECS = [
+      { t: "ff", label: "FUNCTIONAL", tint: C.ff, head: C.ffDark, cols: res.ffCols || [], group: null },
+      { t: "cf", label: "CELLULAR", tint: C.cf, head: C.cfDark, cols: res.cfCols || [], group: cellClass, order: CORD },
+      { t: "tf", label: "REGION", tint: C.tf, head: C.tfDark, cols: res.tfCols || [], group: regClass, order: RORD },
+    ].filter(x => x.cols.length);
+    // build display rows
+    const items = [];
+    SECS.forEach(sec => {
+      items.push({ kind: "sec", sec });
+      const lv = sec.cols.map((f, i) => leaf(sec.t, i, f));
+      if (!sec.group) { lv.map(x => ({ x, r: FORDER(x.facet) })).sort((a, b) => a.r - b.r || a.x.i - b.x.i).forEach(({ x }) => items.push({ kind: "row", sec, leaves: [x], label: x.facet })); return; }
+      const g = {}; lv.forEach(x => { const k = sec.group(x.facet); (g[k] = g[k] || []).push(x); });
+      sec.order.forEach(k => { const L = g[k]; if (!L) return;
+        if (L.length === 1) { items.push({ kind: "row", sec, leaves: L, label: L[0].facet }); return; }
+        const key = sec.t + ":" + k, isOpen = !!open[key];
+        items.push({ kind: "row", sec, leaves: L, label: k + " (" + L.length + " subtypes)", group: key, isOpen });
+        if (isOpen) {
+          const plain = L.filter(x => !isMarker(x.facet)), mk = L.filter(x => isMarker(x.facet));
+          plain.forEach(x => items.push({ kind: "row", sec, leaves: [x], label: x.facet, sub: true }));
+          if (plain.length && mk.length) items.push({ kind: "div", label: "" });
+          mk.forEach(x => items.push({ kind: "row", sec, leaves: [x], label: x.facet, sub: true }));
+        } });
+    });
+    const arr = (g, t, suf) => g[t + suf] || [];
+    const cellOf = (it, g) => {
+      let v = 0, up = 0, dn = 0, hits = 0, sig = false, stat = null, q = 1;
+      it.leaves.forEach(x => { const vv = arr(g, x.t, "")[x.i] || 0; if (!vv) return; hits++;
+        const sA = g[x.t + "Stat"], sx = sA ? sA[x.i] : null;
+        let u = arr(g, x.t, "Up")[x.i] || 0, d = arr(g, x.t, "Dn")[x.i] || 0;
+        if (res.unit === "study" && sx && sx.upU != null) { u = sx.upU; d = sx.dnU; }
+        up += u; dn += d; if (vv > v) v = vv;
+        const qq = arr(g, x.t, "Q")[x.i]; if (qq != null && qq < q) q = qq; if (qq != null && qq < alpha) sig = true;
+        if (it.leaves.length === 1) stat = sx; });
+      return { v, up, dn, hits, sig, stat, q };
+    };
+    const grid = items.map(it => it.kind === "row" ? genes.map(g => cellOf(it, g)) : null);
+    let maxVal = 1; grid.forEach(r => r && r.forEach(c => { if (c.v > maxVal) maxVal = c.v; }));
+    const geneHits = genes.map((g, j) => grid.reduce((a, r, k) => a + (r && !items[k].sub && r[j].v > 0 ? 1 : 0), 0));
+    // geometry
+    const cw = 26, rowH = 24, secH = 30, divH = 18, maxR = 10.5;
+    const LBL = "500 13px 'IBM Plex Sans'", GENE = "500 13px 'IBM Plex Mono'";
+    const m = document.createElement("canvas").getContext("2d");
+    m.font = LBL; let lw = 0; items.forEach(it => { if (it.kind === "row") lw = Math.max(lw, m.measureText(it.label).width + (it.sub ? 34 : 18)); });
+    m.font = GENE; let gw = 0; genes.forEach(g => gw = Math.max(gw, m.measureText(g.gene).width));
+    const ANG = Math.PI / 3;
+    const gutterL = Math.ceil(lw) + 20, gutterT = Math.ceil(gw * Math.sin(ANG)) + 46;
+    let y = gutterT; items.forEach(it => { it.y = y; it.h = it.kind === "sec" ? secH : it.kind === "div" ? divH : rowH; y += it.h; });
+    const gridB = y, gridR = gutterL + nG * cw;
+    const legH = 96;
+    const W = Math.max(gridR + Math.ceil(gw * Math.cos(ANG)) + 16, 640), H = gridB + legH;
+    const dirRGB = (up, dn) => { if (up + dn === 0) return [160, 168, 180];
+      const t = up / (up + dn), B = [33, 102, 172], M = [235, 228, 232], R = [196, 40, 50];
+      const mix = (a, b, k) => a.map((x, i) => Math.round(x + (b[i] - x) * k));
+      return t < 0.5 ? mix(B, M, t * 2) : mix(M, R, (t - 0.5) * 2); };
+    const radius = (v) => mode === "binary" ? maxR * 0.62 : Math.max(2.6, maxR * Math.sqrt(v / maxVal));
+    const clustered = nG > 0 && genes[0].clusterId != null, CLUST = this.CLUST;
 
-    const colX = (c) => cols[c].sec.x + cols[c].i * cw;
-    const facetAt = (c) => cols[c].facet;
-    const typeAt = (c) => cols[c].t;
-    const valAt = (r, c) => cellArr(r, c, "")[cols[c].i] || 0;
-    const upAt = (r, c) => cellArr(r, c, "Up")[cols[c].i] || 0;
-    const dnAt = (r, c) => cellArr(r, c, "Dn")[cols[c].i] || 0;
-    const qAt = (r, c) => { const v = cellArr(r, c, "Q")[cols[c].i]; return v == null ? 1 : v; };
-    const alpha = res.sigAlpha || 0.05;
-    const showSig = props.showSig;
-
-    // Render the whole heatmap into `cv` at `pxScale` device pixels per CSS px,
-    // using `hov` for highlight (null when rendering a clean export bitmap).
-    const renderTo = (cv, pxScale, hov, forExport) => {
+    const renderTo = (cv, px, hov, forExport) => {
       if (!cv) return;
-      cv.width = Math.round(W * pxScale); cv.height = Math.round(H * pxScale);
+      cv.width = Math.round(W * px); cv.height = Math.round(H * px);
       if (!forExport) { cv.style.width = W + "px"; cv.style.height = H + "px"; }
-      const ctx = cv.getContext("2d"); ctx.setTransform(pxScale, 0, 0, pxScale, 0, 0);
-      ctx.clearRect(0, 0, W, H);
-      if (forExport) { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H); }
-      const hover = hov;
-      // section labels
-      ctx.font = "600 12px 'IBM Plex Sans'"; ctx.textBaseline = "alphabetic";
-      secs.forEach(sec => { ctx.fillStyle = sec.tint; ctx.fillText(sec.label, sec.x, 12); });
-      // column headers (rotated)
-      ctx.font = HDR_FONT;
-      for (let c = 0; c < nCols; c++) {
-        const x = colX(c) + cw / 2;
-        ctx.save(); ctx.translate(x, gutterT - 6); ctx.rotate(-HDR_ANGLE);
-        ctx.fillStyle = hover && hover.c === c ? C.ink : cols[c].sec.head;
-        ctx.textAlign = "left";
-        ctx.fillText(facetAt(c), 0, 0); ctx.restore();
+      const ctx = cv.getContext("2d"); ctx.setTransform(px, 0, 0, px, 0, 0); ctx.clearRect(0, 0, W, H);
+      if (forExport) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H); }
+      // gene headers
+      ctx.textBaseline = "alphabetic";
+      for (let j = 0; j < nG; j++) {
+        const x = gutterL + j * cw + cw / 2;
+        if (clustered) { ctx.fillStyle = CLUST[genes[j].clusterId % CLUST.length]; ctx.fillRect(x - cw / 2 + 2, gutterT - 30, cw - 4, 4); }
+        ctx.save(); ctx.translate(x - 2, gutterT - 36); ctx.rotate(-ANG);
+        ctx.font = (hov && hov.j === j ? "600 " : "500 ") + "13px 'IBM Plex Mono'"; ctx.fillStyle = hov && hov.j === j ? C.ink : C.sub; ctx.textAlign = "left";
+        ctx.fillText(genes[j].gene, 0, 0); ctx.restore();
       }
-      // divider line
-      ctx.strokeStyle = C.line; ctx.lineWidth = 1;
-      secs.forEach((sec, si) => { if (!si) return; const dx = sec.x - divGap / 2; ctx.beginPath(); ctx.moveTo(dx, gutterT - 2); ctx.lineTo(dx, H); ctx.stroke(); });
-      // rows
       ctx.textBaseline = "middle";
-      const CLUST = this.CLUST;
-      const clustered = nRows > 0 && res.rows[0].clusterId != null;
-      for (let r = 0; r < nRows; r++) {
-        const y = gutterT + r * ch;
-        if (clustered) {
-          const cid = res.rows[r].clusterId;
-          if (r > 0 && res.rows[r - 1].clusterId !== cid) {
-            ctx.strokeStyle = "rgba(20,30,50,.18)"; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(2, y + 0.5); ctx.lineTo(W - 8, y + 0.5); ctx.stroke();
-          }
-          ctx.fillStyle = CLUST[cid % CLUST.length];
-          ctx.fillRect(2, y + 2, 4, ch - 4);
+      items.forEach((it, k) => {
+        if (it.kind === "sec") {
+          ctx.font = "600 11px 'IBM Plex Sans'"; ctx.fillStyle = it.sec.tint; ctx.textAlign = "left";
+          ctx.fillText(it.sec.label, 4, it.y + it.h / 2 + 3);
+          ctx.strokeStyle = it.sec.tint; ctx.globalAlpha = .45; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(gutterL - 6, it.y + it.h / 2 + 3); ctx.lineTo(gridR, it.y + it.h / 2 + 3); ctx.stroke(); ctx.globalAlpha = 1;
+          return; }
+        if (it.kind === "div") {
+          ctx.font = "italic 400 11px 'IBM Plex Sans'"; ctx.fillStyle = C.mut; ctx.textAlign = "right"; ctx.fillText(it.label, gutterL - 10, it.y + it.h / 2);
+          ctx.setLineDash([3, 3]); ctx.strokeStyle = C.line; ctx.beginPath(); ctx.moveTo(gutterL, it.y + it.h / 2); ctx.lineTo(gridR, it.y + it.h / 2); ctx.stroke(); ctx.setLineDash([]); return; }
+        const hr = hov && hov.k === k, cy = it.y + it.h / 2;
+        if (it.sub) { ctx.fillStyle = "rgba(217,119,6,.05)"; if (it.sec.t === "tf") ctx.fillStyle = "rgba(79,70,229,.05)"; ctx.fillRect(gutterL, it.y, nG * cw, it.h); }
+        if (hr) { ctx.fillStyle = "rgba(20,30,50,.05)"; ctx.fillRect(0, it.y, gridR, it.h); }
+        ctx.font = (hr || it.group ? "600 " : "500 ") + "13px 'IBM Plex Sans'"; ctx.fillStyle = hr ? C.ink : it.sub ? C.sub : it.sec.head; ctx.textAlign = "right";
+        ctx.fillText(it.label, gutterL - 10, cy);
+        if (it.group) { ctx.fillStyle = it.sec.tint; ctx.font = "600 10px 'IBM Plex Sans'"; ctx.textAlign = "right";
+          ctx.fillText(it.isOpen ? "\u25be" : "\u25b8", gutterL - 14 - ctx.measureText(it.label).width * 1.3, cy); }
+        ctx.strokeStyle = C.line2; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(gutterL, it.y + it.h - .5); ctx.lineTo(gridR, it.y + it.h - .5); ctx.stroke();
+        const row = grid[k];
+        for (let j = 0; j < nG; j++) {
+          const c = row[j], cx = gutterL + j * cw + cw / 2;
+          if (!c.v) continue;
+          const rr = radius(c.v), col = dirRGB(c.up, c.dn);
+          ctx.fillStyle = "rgb(" + col.join(",") + ")"; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.fill();
+          if (showSig && c.sig) { ctx.strokeStyle = C.ink; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(cx, cy, rr + 2.4, 0, Math.PI * 2); ctx.stroke(); }
+          if (hov && hov.k === k && hov.j === j) { ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.strokeRect(cx - cw / 2 + .5, it.y + .5, cw - 1, it.h - 1); }
         }
-        // row label
-        ctx.font = (hover && hover.r === r ? "600 " : "500 ") + "14px 'IBM Plex Mono'";
-        ctx.fillStyle = hover && hover.r === r ? C.ink : C.sub; ctx.textAlign = "right";
-        ctx.fillText(res.rows[r].gene, gutterL - 10, y + ch / 2);
-        // cells
-        for (let c = 0; c < nCols; c++) {
-          const v = valAt(r, c), x = colX(c);
-          let a = 0;
-          if (v > 0) {
-            if (mode === "direction") {
-              const up = upAt(r, c), dn = dnAt(r, c);
-              const net = up - dn, tot = up + dn;
-              let base;
-              if (tot === 0) base = [120, 130, 145];          // no directional info
-              else if (up > 0 && dn > 0) base = [138, 91, 184]; // mixed → purple
-              else if (net > 0) base = [214, 69, 63];           // up → red
-              else base = [47, 111, 176];                       // down → blue
-              a = 0.35 + 0.65 * (v / maxVal);
-              ctx.fillStyle = "rgba(" + base[0] + "," + base[1] + "," + base[2] + "," + a + ")";
-            } else {
-              const base = cols[c].sec.rgb;
-              a = mode === "binary" ? 0.92 : (0.22 + 0.78 * (v / maxVal));
-              ctx.fillStyle = "rgba(" + base[0] + "," + base[1] + "," + base[2] + "," + a + ")";
-            }
-          } else ctx.fillStyle = "#f4f6f8";
-          ctx.fillRect(x + 1, y + 1, cw - 2, ch - 2);
-          if (mode === "count" && v > 0 && a > 0.5 && v < 100) { ctx.fillStyle = "#fff"; ctx.font = "600 10px 'IBM Plex Mono'"; ctx.textAlign = "center"; ctx.fillText(v, x + cw / 2, y + ch / 2 + 0.5); }
-          if (showSig && v > 0 && qAt(r, c) < alpha) {
-            ctx.fillStyle = a > 0.5 ? "#fff" : C.ink;
-            ctx.font = "700 10px 'IBM Plex Sans'"; ctx.textAlign = "right"; ctx.textBaseline = "top";
-            ctx.fillText("\u2731", x + cw - 2.5, y + 1.5);
-            ctx.textBaseline = "middle";
-          }
-        }
-      }
-      // hover highlight outline
-      if (hover) {
-        ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5;
-        ctx.strokeRect(colX(hover.c) + 0.5, gutterT + hover.r * ch + 0.5, cw - 1, ch - 1);
-      }
+      });
+      // legend
+      const ly = gridB + 22, BW = 180; let lx = 4;
+      ctx.textBaseline = "middle"; ctx.font = "500 11px 'IBM Plex Sans'"; ctx.textAlign = "left";
+      const gr = ctx.createLinearGradient(lx, 0, lx + BW, 0); gr.addColorStop(0, "rgb(33,102,172)"); gr.addColorStop(.5, "rgb(235,228,232)"); gr.addColorStop(1, "rgb(196,40,50)");
+      ctx.fillStyle = gr; ctx.fillRect(lx, ly - 5, BW, 10);
+      ctx.fillStyle = C.sub; ctx.fillText("all down", lx, ly + 16); ctx.textAlign = "center"; ctx.fillText("mixed", lx + BW / 2, ly + 16); ctx.textAlign = "right"; ctx.fillText("all up", lx + BW, ly + 16);
+      ctx.textAlign = "left";
+      lx += BW + 40;
+      if (mode !== "binary") { const vals = [1, Math.max(2, Math.round(maxVal / 2.5)), maxVal].filter((v, i, a) => a.indexOf(v) === i);
+        vals.forEach(v => { const rr = radius(v); ctx.fillStyle = C.sub; ctx.beginPath(); ctx.arc(lx + maxR, ly, rr, 0, Math.PI * 2); ctx.fill(); ctx.fillText(v, lx + maxR * 2 + 4, ly); lx += maxR * 2 + 30; });
+        ctx.fillStyle = C.mut; ctx.fillText("dot area = " + (res.unit === "list" ? "lists" : "studies"), lx, ly); }
+      ctx.fillStyle = C.mut; ctx.fillText("click a class to expand", 4, ly + 44);
     };
     const draw = () => renderTo(canvasRef.current, window.devicePixelRatio || 1, hover, false);
-    useEffect(draw, [res, mode, hover, props.showSig]);
-    // expose a clean high-res renderer for the PNG export (captures current res/mode/sig)
+    useEffect(draw);
     useEffect(() => {
       this._fpRenderHeatmap = (scale) => { const off = document.createElement("canvas"); renderTo(off, scale, null, true); return { canvas: off, cssW: W, cssH: H }; };
-      return () => { if (this._fpRenderHeatmap) this._fpRenderHeatmap = null; };
+      return () => { this._fpRenderHeatmap = null; };
     });
-
-    const onMove = (e) => {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const px = e.clientX - rect.left, py = e.clientY - rect.top;
-      if (py < gutterT || px < gutterL) { if (hover) setHover(null); return; }
-      const r = Math.floor((py - gutterT) / ch);
-      let c = -1;
-      for (let cc = 0; cc < nCols; cc++) { const x = colX(cc); if (px >= x && px < x + cw) { c = cc; break; } }
-      if (r < 0 || r >= nRows || c < 0) { if (hover) setHover(null); return; }
-      const ty = typeAt(c);
-      const statArr = res.rows[r][ty + "Stat"];
-      setHover({ r, c, x: px, y: py, facet: facetAt(c), type: ty, gene: res.rows[r].gene, val: valAt(r, c), up: upAt(r, c), dn: dnAt(r, c), q: qAt(r, c),
-        stat: statArr ? statArr[cols[c].i] : null });
+    const hit = (e) => {
+      const rect = canvasRef.current.getBoundingClientRect(), px = e.clientX - rect.left, py = e.clientY - rect.top;
+      const k = items.findIndex(it => py >= it.y && py < it.y + it.h);
+      if (k < 0 || items[k].kind !== "row") return null;
+      const j = px >= gutterL && px < gridR ? Math.floor((px - gutterL) / cw) : -1;
+      return { k, j, x: px, y: py };
     };
-
+    const onMove = (e) => { const t = hit(e); if (!t) { if (hover) setHover(null); return; }
+      if (!hover || hover.k !== t.k || hover.j !== t.j || Math.abs(hover.x - t.x) > 6 || Math.abs(hover.y - t.y) > 6) setHover(t); };
+    const onClick = () => { if (!hover) return; const it = items[hover.k];
+      if (it.group) { setOpen(o => ({ ...o, [it.group]: !o[it.group] })); return; }
+      if (hover.j >= 0 && grid[hover.k][hover.j].v > 0) props.onCell(genes[hover.j].gene, it.leaves[0].facet, it.leaves[0].t); };
+    const hv = hover && hover.j >= 0 ? { it: items[hover.k], g: genes[hover.j], c: grid[hover.k][hover.j] } : null;
+    const unitW = (n) => res.unit === "list" ? (n === 1 ? "list" : "lists") : (n === 1 ? "study" : "studies");
+    const fmtQ = (q) => q < 0.001 ? q.toExponential(1) : q.toFixed(3);
     return h("div", { ref: wrapRef, style: { position: "relative", display: "inline-block" } },
-      h("canvas", { id: "gdx-heatmap", ref: canvasRef, onMouseMove: onMove, onMouseLeave: () => setHover(null),
-        onClick: () => { if (hover) props.onCell(hover.gene, hover.facet, hover.type); }, style: { cursor: hover && hover.val > 0 ? "pointer" : "default", display: "block" } }),
-      hover && h("div", { style: { position: "absolute", left: Math.min(hover.x + 14, W - 250), top: hover.y + 14, background: C.act, color: "#fff", padding: "8px 11px", borderRadius: 8, fontSize: 12, pointerEvents: "none", zIndex: 30, maxWidth: 260, boxShadow: "0 4px 14px rgba(0,0,0,.2)" } },
-        h("div", { style: { fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, marginBottom: 2 } }, hover.gene),
-        h("div", { style: { opacity: .85 } }, hover.facet),
-        h("div", { style: { marginTop: 4, color: hover.type === "ff" ? "#7fe0d4" : hover.type === "tf" ? "#b9b4ff" : "#f7c878" } }, hover.val > 0 ? "in " + hover.val + " " + (res.unit === "list" ? ("list" + (hover.val > 1 ? "s" : "")) : (hover.val > 1 ? "studies" : "study")) + " \u00b7 click for detail" : "not present"),
-        hover.val > 0 && (hover.up > 0 || hover.dn > 0) && h("div", { style: { marginTop: 3, fontSize: 12, opacity: .9 } }, (() => {
-          const st = res.unit === "study" && hover.stat;
-          const u = st ? hover.stat.upU : hover.up, d = st ? hover.stat.dnU : hover.dn;
-          return (u ? "\u25b2 " + u + " up" : "") + (u && d ? "   " : "") + (d ? "\u25bc " + d + " down" : "") + (st ? " (studies)" : " (lists)");
-        })()),
-        hover.val > 0 && hover.stat && h("div", { style: { marginTop: 5, paddingTop: 5, borderTop: "1px solid rgba(255,255,255,.25)", fontSize: 12, lineHeight: 1.55, fontFamily: "'IBM Plex Mono',monospace" } },
-          h("div", null, "obs " + hover.stat.v + " vs exp " + hover.stat.expected.toFixed(2) + (hover.stat.fold != null ? "  (" + hover.stat.fold.toFixed(1) + "\u00d7)" : "")),
-          h("div", null, "rate " + (hover.stat.rate * 100).toFixed(0) + "% [" + (hover.stat.ciLo * 100).toFixed(0) + "\u2013" + (hover.stat.ciHi * 100).toFixed(0) + "] vs base " + (hover.stat.baseline * 100).toFixed(0) + "%"),
-          h("div", null, "p " + (hover.stat.p < 0.001 ? hover.stat.p.toExponential(1) : hover.stat.p.toFixed(3)) + "  q " + (hover.q < 0.001 ? hover.q.toExponential(1) : hover.q.toFixed(3))),
-          hover.stat.minKill != null && h("div", { style: { color: hover.stat.minKill === 1 ? "#ffb4a8" : "#c9e9c0" } }, "drop " + hover.stat.minKill + " " + (res.unit === "list" ? (hover.stat.minKill > 1 ? "lists" : "list") : (hover.stat.minKill > 1 ? "studies" : "study")) + " \u2192 n.s."),
-          hover.stat.concordance !== "n/a" && h("div", { style: { opacity: .85 } }, hover.stat.concordance + (hover.stat.concP < 0.05 ? " (p " + hover.stat.concP.toFixed(3) + ")" : ""))),
-        hover.val > 0 && !hover.stat && h("div", { style: { marginTop: 3, fontSize: 12, opacity: .9 } }, hover.q < (res.sigAlpha || 0.05) ? "\u2731 enriched \u00b7 FDR " + (hover.q < 0.001 ? "<0.001" : hover.q.toFixed(3)) : "FDR " + (hover.q >= 0.999 ? "n.s." : hover.q.toFixed(3)))));
+      h("canvas", { id: "gdx-heatmap", ref: canvasRef, onMouseMove: onMove, onMouseLeave: () => setHover(null), onClick,
+        style: { display: "block", cursor: hover && (items[hover.k].group || (hv && hv.c.v > 0)) ? "pointer" : "default" } }),
+      hv && h("div", { style: { position: "absolute", left: Math.min(hover.x + 14, W - 260), top: hover.y + 14, background: C.act, color: "#fff", padding: "8px 11px", borderRadius: 8, fontSize: 12, pointerEvents: "none", zIndex: 30, maxWidth: 260, boxShadow: "0 4px 14px rgba(0,0,0,.2)" } },
+        h("div", { style: { fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, marginBottom: 2 } }, hv.g.gene),
+        h("div", { style: { opacity: .85 } }, hv.it.label),
+        h("div", { style: { marginTop: 4 } }, !hv.c.v ? "not present" : hv.it.group ? hv.c.hits + " of " + hv.it.leaves.length + " subtypes hit \u00b7 click to " + (hv.it.isOpen ? "collapse" : "expand") : "in " + hv.c.v + " " + unitW(hv.c.v) + " \u00b7 click for detail"),
+        hv.c.v > 0 && (hv.c.up > 0 || hv.c.dn > 0) && h("div", { style: { marginTop: 3, opacity: .9 } }, (() => { const u = hv.c.up, d = hv.c.dn, pu = Math.round(100 * u / (u + d));
+          return (u ? "\u25b2 " + u + " up (" + pu + "%)" : "") + (u && d ? "   " : "") + (d ? "\u25bc " + d + " down (" + (100 - pu) + "%)" : ""); })()),
+        hv.c.v > 0 && hv.c.stat && h("div", { style: { marginTop: 5, paddingTop: 5, borderTop: "1px solid rgba(255,255,255,.25)", lineHeight: 1.55, fontFamily: "'IBM Plex Mono',monospace" } },
+          h("div", null, "rate " + (hv.c.stat.rate * 100).toFixed(0) + "% [" + (hv.c.stat.ciLo * 100).toFixed(0) + "\u2013" + (hv.c.stat.ciHi * 100).toFixed(0) + "] vs base " + (hv.c.stat.baseline * 100).toFixed(0) + "%"),
+          h("div", null, "p " + fmtQ(hv.c.stat.p) + "  q " + fmtQ(hv.c.q))),
+        hv.c.v > 0 && !hv.c.stat && hv.c.q < 1 && h("div", { style: { marginTop: 3, opacity: .9 } }, (hv.c.sig ? "\u2731 enriched \u00b7 " : "") + "best FDR " + fmtQ(hv.c.q))),
+      hover && hover.j < 0 && items[hover.k].group && h("div", { style: { position: "absolute", left: hover.x + 14, top: hover.y + 14, background: C.act, color: "#fff", padding: "6px 10px", borderRadius: 8, fontSize: 12, pointerEvents: "none", zIndex: 30 } }, "Click to " + (items[hover.k].isOpen ? "collapse" : "expand")));
   };
 
   // =====================================================================
@@ -2411,6 +2414,57 @@ class Component extends DCLogic {
   // =====================================================================
   //  FACET LEGEND MODAL
   // =====================================================================
+  IntroPanel = ({ C, h, genes, nLists, nFacets, busy, onSearch, onFocus }) => {
+    const mono = "'IBM Plex Mono',monospace";
+    const card = { background: C.bg, border: "1px solid " + C.line, borderRadius: 14, boxShadow: "0 2px 0 " + C.line2 + ", 0 8px 24px rgba(20,30,50,.05)", padding: "20px 22px", minWidth: 0 };
+    const eyebrow = (t, bg, fg) => h("div", { style: { alignSelf: "flex-start", background: bg, color: fg, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", padding: "5px 10px", borderRadius: 6 } }, t);
+    const arrow = (label, col, onClick) => h("div", { className: "gdx-intro-arrow", style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minWidth: 0 } },
+      h(onClick ? "button" : "div", { type: onClick ? "button" : undefined, onClick, disabled: onClick ? (busy || !genes.length) : undefined, style: { border: "1px solid " + col, background: C.bg, color: col, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", padding: "5px 12px", borderRadius: 999, cursor: onClick ? "pointer" : "default", fontFamily: "inherit" } }, label),
+      h("div", { className: "gdx-intro-line", style: { display: "flex", alignItems: "center", width: "100%", minWidth: 40 } },
+        h("div", { style: { flex: 1, height: 2, background: col } }),
+        h("div", { style: { width: 0, height: 0, borderTop: "6px solid transparent", borderBottom: "6px solid transparent", borderLeft: "9px solid " + col } })));
+    const shown = genes.slice(0, 9);
+    const rows = [
+      { id: "GL_0014", facet: "Microglia / DAM", bg: C.cfBg, fg: C.cfDark, ov: 18, fdr: "1.2e-4" },
+      { id: "GL_0182", facet: "Resilience Hub", bg: C.tfBg, fg: C.tfDark, ov: 9, fdr: "3.4e-3" },
+      { id: "GL_0242", facet: "BBB / Pericyte", bg: C.ffBg, fg: C.ffDark, ov: 6, fdr: "1.8e-2" },
+    ];
+    return h("section", { "aria-labelledby": "gdx-intro-title", style: { background: C.canvas, borderBottom: "1px solid " + C.line, padding: "32px 24px 36px" } },
+      h("div", { style: { maxWidth: 1180, margin: "0 auto", display: "flex", flexDirection: "column", gap: 26 } },
+        h("div", { style: { textAlign: "center", display: "flex", flexDirection: "column", gap: 6 } },
+          h("h2", { id: "gdx-intro-title", style: { margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: C.ink } }, "The Genedex discovery platform"),
+          h("p", { style: { margin: 0, fontSize: 15, color: C.sub, textWrap: "pretty" } }, "Ontology-driven contextualisation across curated Alzheimer\u2019s disease signatures")),
+        h("div", { className: "gdx-intro-grid" },
+          h("div", { role: "button", tabIndex: 0, onClick: onFocus, onKeyDown: (e) => { if (e.key === "Enter") onFocus(); }, style: { ...card, display: "flex", flexDirection: "column", gap: 10, cursor: "text" } },
+            eyebrow("User input", C.blueBg, C.blue),
+            h("div", { style: { fontSize: 18, fontWeight: 600 } }, "Query gene list"),
+            h("div", { style: { fontSize: 13, color: C.sub } }, "Paste gene symbols or signatures"),
+            h("div", { style: { border: "1px solid " + C.line, background: C.panel, borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 } },
+              h("div", { style: { fontFamily: mono, fontSize: 13, fontWeight: 500, color: C.blue, lineHeight: 1.7, wordBreak: "break-word" } },
+                shown.length ? shown.join(", ") + (genes.length > shown.length ? ", \u2026" : "") : h("span", { style: { color: C.mut } }, "No genes yet\u2026")),
+              h("div", { style: { alignSelf: "flex-end", background: C.panel2, color: C.sub, fontSize: 12, padding: "3px 10px", borderRadius: 6 } }, genes.length + (genes.length === 1 ? " gene" : " genes")))),
+          arrow(busy ? "SEARCHING\u2026" : "SEARCH", C.blue, onSearch),
+          h("div", { style: { display: "flex", alignItems: "center", justifyContent: "center" } },
+            h("div", { style: { width: 220, height: 220, borderRadius: "50%", border: "2px dashed " + C.ffLine, padding: 12, flex: "0 0 auto" } },
+              h("div", { style: { width: "100%", height: "100%", borderRadius: "50%", background: C.ff, boxShadow: "0 10px 30px rgba(13,148,136,.28)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: "#fff", textAlign: "center" } },
+                h("div", { style: { fontSize: 22, fontWeight: 700, letterSpacing: ".04em" } }, "GENEDEX"),
+                h("div", { style: { width: 90, height: 1, background: "rgba(255,255,255,.55)", margin: "4px 0" } }),
+                h("div", { style: { fontSize: 14 } }, nLists.toLocaleString() + " curated lists"),
+                h("div", { style: { fontSize: 13 } }, nFacets.toLocaleString() + " facet ontologies")))),
+          arrow("RANKED", C.ff),
+          h("div", { style: { ...card, display: "flex", flexDirection: "column", gap: 10 } },
+            h("div", { style: { fontSize: 15, fontWeight: 600, letterSpacing: ".03em", textTransform: "uppercase" } }, "Gene search results"),
+            h("div", { style: { display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto auto", columnGap: 14, rowGap: 0, fontSize: 13, alignItems: "center" } },
+              ["List ID", "Facet", "Overlap", "FDR"].map(t => h("div", { key: t, style: { fontSize: 11, color: C.mut, textTransform: "uppercase", letterSpacing: ".05em", padding: "8px 0", borderBottom: "1px solid " + C.line } }, t)),
+              rows.flatMap(r => [
+                h("div", { key: r.id + "a", style: { fontFamily: mono, fontWeight: 600, color: C.blue, padding: "9px 0", borderBottom: "1px solid " + C.line2 } }, r.id),
+                h("div", { key: r.id + "b", style: { padding: "9px 0", borderBottom: "1px solid " + C.line2, minWidth: 0 } }, h("span", { style: { background: r.bg, color: r.fg, fontSize: 12, padding: "3px 8px", borderRadius: 5, whiteSpace: "nowrap" } }, r.facet)),
+                h("div", { key: r.id + "c", style: { padding: "9px 0", borderBottom: "1px solid " + C.line2, textAlign: "right" } }, r.ov),
+                h("div", { key: r.id + "d", style: { fontFamily: mono, color: C.sig, padding: "9px 0", borderBottom: "1px solid " + C.line2 } }, r.fdr)])),
+            h("div", { style: { border: "1px solid " + C.line, borderRadius: 10, padding: "10px 12px", fontSize: 12, color: C.sub } },
+              h("span", { style: { color: C.blue, fontWeight: 600 } }, "Refine in place"), " \u2014 FDR slider, facet filters, no re-query")))));
+  };
+
   Legend = ({ C, G, h, onClose }) => {
     const { useState } = React;
     const [q, setQ] = useState("");
