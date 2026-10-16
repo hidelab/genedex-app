@@ -574,13 +574,17 @@ class Component extends DCLogic {
   // =====================================================================
   NavBar = (p) => {
     const h = React.createElement, C = this.C, G = window.Genedex;
-    const tabs = [["home", "Home"], ["workbench", "Gene Workbench"], ["download", "Download"], ["docs", "Documentation"], ["about", "About"]];
-    const tabBtn = ([id, label]) => h("button", {
-      key: id, onClick: () => p.setTab(id),
-      style: { border: "none", background: p.tab === id ? C.bg : "transparent", color: p.tab === id ? C.ink : C.sub,
-        padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: p.tab === id ? 600 : 500, cursor: "pointer",
-        boxShadow: p.tab === id ? "0 1px 3px rgba(20,30,50,.10)" : "none", transition: "all .12s" },
-    }, label);
+    const tabs = [["home", "Home"], ["workbench:search", "Gene Search"], ["workbench:fingerprint", "Gene Print"], ["workbench:contexts", "Context Matrix"], ["download", "Download"], ["docs", "Documentation"], ["about", "About"]];
+    const tabBtn = ([id, label]) => {
+      const [tabId, view] = id.split(":");
+      const on = view ? (p.tab === tabId && p.wbTab === view) : p.tab === id;
+      return h("button", {
+        key: id, onClick: () => { if (view) p.setWbTab(view); p.setTab(tabId); },
+        style: { border: "none", background: on ? C.bg : "transparent", color: on ? C.ink : C.sub,
+          padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: on ? 600 : 500, cursor: "pointer",
+          boxShadow: on ? "0 1px 3px rgba(20,30,50,.10)" : "none", transition: "all .12s" },
+      }, label);
+    };
     return h("header", { style: { display: "flex", alignItems: "center", flexWrap: "wrap", rowGap: 8, gap: 18, padding: "8px 20px", minHeight: 56,
       background: C.bg, borderBottom: "1px solid " + C.line, flex: "0 0 auto", zIndex: 20 } },
       // logo
@@ -1724,10 +1728,6 @@ class Component extends DCLogic {
     };
 
     return h("div", { style: { position: "absolute", inset: 0, display: "flex", flexDirection: "column" } },
-      // sub-tabs
-      h("div", { style: { display: "flex", alignItems: "center", gap: 4, padding: "8px 20px", borderBottom: "1px solid " + C.line, background: C.bg, flex: "0 0 auto" } },
-        subTabs.map(([id, label]) => h("button", { key: id, onClick: () => p.setWbTab(id),
-          style: { border: "none", borderBottom: "2px solid " + (p.wbTab === id ? C.ff : "transparent"), background: "none", color: p.wbTab === id ? C.ink : C.sub, padding: "6px 4px", marginRight: 14, fontSize: 14, fontWeight: p.wbTab === id ? 600 : 500, cursor: "pointer" } }, label))),
       h("div", { style: { flex: 1, minHeight: 0 } },
         p.wbTab === "search" && renderSearch(),
         p.wbTab === "fingerprint" && renderFingerprint(),
@@ -2433,7 +2433,7 @@ class Component extends DCLogic {
       h("div", { style: { maxWidth: 1180, margin: "0 auto", display: "flex", flexDirection: "column", gap: 26 } },
         h("div", { style: { textAlign: "center", display: "flex", flexDirection: "column", gap: 6 } },
           h("h2", { id: "gdx-intro-title", style: { margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: C.ink } }, "The Genedex discovery platform"),
-          h("p", { style: { margin: 0, fontSize: 15, color: C.sub, textWrap: "pretty" } }, "Ontology-driven contextualisation across curated Alzheimer\u2019s disease signatures")),
+          h("p", { style: { margin: 0, fontSize: 15, color: C.sub, textWrap: "pretty" } }, "Contextualisation across curated Alzheimer\u2019s disease signatures using a controlled vocabulary")),
         h("div", { className: "gdx-intro-grid" },
           h("div", { role: "button", tabIndex: 0, onClick: onFocus, onKeyDown: (e) => { if (e.key === "Enter") onFocus(); }, style: { ...card, display: "flex", flexDirection: "column", gap: 10, cursor: "text" } },
             eyebrow("User input", C.blueBg, C.blue),
