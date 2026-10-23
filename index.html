@@ -187,7 +187,7 @@ class Component extends DCLogic {
         const tabRaw = (q.get("tab") || "home").toLowerCase();
         const viewRaw = (q.get("view") || "").toLowerCase();
         const tabsOk = { home: "home", workbench: "workbench", search: "workbench", fingerprint: "workbench", contexts: "workbench", context: "workbench", download: "download", docs: "docs", about: "about" };
-        const viewsOk = { search: "search", fingerprint: "fingerprint", contexts: "contexts", context: "contexts" };
+        const viewsOk = { search: "search", fingerprint: "fingerprint", contexts: "contexts", context: "contexts", similarity: "similarity" };
         const dirMap = { all: "All", up: "Up", down: "Down" };
         const genes = (q.get("genes") || "").split(/[,\s;]+/).map(s => s.trim()).filter(Boolean);
         const fdrRaw = q.get("fdr");
@@ -220,7 +220,7 @@ class Component extends DCLogic {
     const url0 = readUrlState();
 
     const [tab, setTab] = useState(() => (url0.tab && url0.tab !== "home") ? url0.tab : ((url0.geneText || url0.view === "fingerprint" || url0.view === "contexts") ? "workbench" : "home"));
-    const [wbTab, setWbTab] = useState(() => url0.view === "fingerprint" ? "fingerprint" : url0.view === "contexts" ? "contexts" : "search");
+    const [wbTab, setWbTab] = useState(() => url0.view === "fingerprint" ? "fingerprint" : url0.view === "contexts" ? "contexts" : url0.view === "similarity" ? "similarity" : "search");
     const [sessionLists, setSessionLists] = useState([]);
     const [legendOpen, setLegendOpen] = useState(false);
     const [devMode, setDevMode] = useState(() => { try { return localStorage.getItem("gdx_dev") === "1" || /dev/.test(location.hash); } catch (e) { return false; } });
@@ -234,7 +234,7 @@ class Component extends DCLogic {
     const fpInput = wbGenes, setFpInput = setWbGenes;
     const ctxInput = wbGenes, setCtxInput = setWbGenes;
     const [searchRes, setSearchRes] = useState(null);
-    const [searchOpts, setSearchOpts] = useState({ dir: url0.dir, fdr: url0.fdr != null ? url0.fdr : 0.05, facet: url0.facet, sort: "fdr", sortDir: "asc" });
+    const [searchOpts, setSearchOpts] = useState({ dir: url0.dir, fdr: url0.fdr != null ? url0.fdr : 1, facet: url0.facet, sort: "fdr", sortDir: "asc" });
     const [fpRes, setFpRes] = useState(null);
     const [fpOpts, setFpOpts] = useState({ dir: "All", mode: "count", unit: "study", tissues: [], types: [], contrasts: [], facetClass: "both", showSig: false, cellTypes: [], funcFacets: [], tissueFacets: [], restrictFf: [], restrictCf: [], rowOrder: "breadth", cluster: false });
     const [ctxRes, setCtxRes] = useState(null);
@@ -491,9 +491,15 @@ class Component extends DCLogic {
           ["Provenance", "Click a filled cell for the supporting studies, PubMed links, reported direction, method, and list ID. The summary counts unique studies and unique lists; Up / Down / Unspecified are unique studies with that reported direction (one paper can appear in both if it has Up and Down lists)."],
         ] })),
 
-
-      h(S, { key: "lists", kicker: "Workspace", title: "My Lists", accent: C.ink },
-        h("p", { style: { margin: 0 } }, "Any gene set you paste or derive can be saved to My Lists for the session and reloaded into another module, so one result can be carried across Search, Fingerprint and Context Matrix without retyping.")),
+      h(S, { key: "sim", kicker: "Module", title: "Similarity", accent: C.ff },
+        h("p", { style: { margin: 0 } }, "Measures how alike gene sets are by their genes, using the Jaccard index: J(A,B) = |A \u2229 B| / |A \u222a B|, the number of shared genes divided by the number of distinct genes in either set. J = 1 means identical sets; J = 0 means no genes in common. Because the denominator is the union, a small list contained inside a much larger one still scores low, so high values mean the two sets are genuinely alike, not just nested."),
+        h(DL, { items: [
+          ["Compare by gene list", "Compares individual sets: the current Gene Search query, lists you paste in, curated reference lists, and optionally Gene Search hits passing a chosen adjusted p-value (FDR) threshold, up to a maximum number of hits. Reference lists can be found by GL ID, name, author or facet, and all lists under a facet can be added at once."],
+          ["Compare by AD facet", "All curated lists sharing a facet are first pooled (union of their genes) into one facet-level set; pairwise Jaccard indices are then computed between these pooled sets. Facets can be limited to one class (functional, cellular, tissue), picked by hand, taken as the 15 most used, or taken from the facets of significant search hits."],
+          ["Heatmap", "Each cell is the Jaccard index for one pair. Clustered order uses average-linkage hierarchical clustering on 1 \u2212 J so similar sets sit together; Input keeps the order sets were added. The colour scale runs 0 \u2013 max (relative, best for small values) or 0 \u2013 1 (absolute, comparable across matrices)."],
+          ["Cell details", "Hover a cell for the intersection and union sizes. Click it to list the shared genes, copy them, or send them to Gene Search."],
+          ["Export", "Download CSV saves the matrix as displayed (rows and columns in the current order, values to four decimals)."],
+        ] })),
 
     ]);
   };
@@ -574,7 +580,7 @@ class Component extends DCLogic {
   // =====================================================================
   NavBar = (p) => {
     const h = React.createElement, C = this.C, G = window.Genedex;
-    const tabs = [["home", "Home"], ["workbench:search", "Gene Search"], ["workbench:fingerprint", "Gene Print"], ["workbench:contexts", "Context Matrix"], ["download", "Download"], ["docs", "Documentation"], ["about", "About"]];
+    const tabs = [["home", "Home"], ["workbench:search", "Gene Search"], ["workbench:fingerprint", "Gene Print"], ["workbench:contexts", "Context Matrix"], ["workbench:similarity", "Similarity"], ["download", "Download"], ["docs", "Documentation"], ["about", "About"]];
     const tabBtn = ([id, label]) => {
       const [tabId, view] = id.split(":");
       const on = view ? (p.tab === tabId && p.wbTab === view) : p.tab === id;
@@ -950,9 +956,9 @@ class Component extends DCLogic {
       return h("div", { style: { display: "flex", height: "100%", minHeight: 0 } },
         // rail
         h("div", { style: { width: 300, flex: "0 0 auto", borderRight: "1px solid " + C.line, background: C.bg, padding: 18, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 } },
-          h("div", null, railLabel("Query genes", parseCount(p.searchInput) + " parsed"), railTextarea(p.searchInput, p.setSearchInput, "Paste HGNC symbols\u2026")),
+          h("div", null, railLabel("Query genes", parseCount(p.searchInput) + " parsed", "Paste HGNC gene symbols (one per line, or separated by commas or spaces). Aliases are remapped to current symbols; unknown genes are ignored."), railTextarea(p.searchInput, p.setSearchInput, "Paste HGNC symbols\u2026")),
           !parseCount(p.searchInput) && exampleBtn("search"),
-          h("div", null, railLabel("Direction"), h(this.Seg, { value: p.searchOpts.dir, onChange: v => p.setSearchOpts(o => ({ ...o, dir: v })), options: [{ v: "All", l: "All" }, { v: "Up", l: "Up" }, { v: "Down", l: "Down" }], accent: C.ff })),
+          h("div", null, railLabel("Direction", null, "Restricts which curated lists can be tested: all lists, only up-regulated, or only down-regulated. Each list is tested for overlap with your genes (hypergeometric test, BH-adjusted FDR)."), h(this.Seg, { value: p.searchOpts.dir, onChange: v => p.setSearchOpts(o => ({ ...o, dir: v })), options: [{ v: "All", l: "All" }, { v: "Up", l: "Up" }, { v: "Down", l: "Down" }], accent: C.ff })),
           railBtn("Run", () => p.runSearch(p.searchInput, { dir: p.searchOpts.dir }), true),
           h("div", { style: { display: "flex", gap: 8 } },
             h("button", { onClick: () => fileRef.current && fileRef.current.click(), style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "8px", fontSize: 12, cursor: "pointer" } }, "Upload file"),
@@ -976,8 +982,8 @@ class Component extends DCLogic {
                   h("button", { type: "button", onClick: exportSearchCsv, style: { border: "1px solid " + C.ffLine, background: C.ffBg, color: C.ffDark, borderRadius: 8, padding: "6px 11px", fontSize: 12, fontWeight: 600, cursor: "pointer" } }, "Export CSV"),
                   h("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.sub } }, "FDR \u2264",
                     h("input", { type: "range", min: 0, max: 1, step: 0.01, value: p.searchOpts.fdr, onChange: e => p.setSearchOpts(o => ({ ...o, fdr: +e.target.value })), style: { width: 90, accentColor: C.ff } }),
-                    h("span", { style: { fontFamily: "'IBM Plex Mono',monospace", width: 34, color: C.ink } }, p.searchOpts.fdr.toFixed(2)),
-                    h("span", { style: { color: C.sig, fontWeight: 600, whiteSpace: "nowrap" } }, "(" + sig + " significant)")),
+                    h("span", { style: { fontFamily: "'IBM Plex Mono',monospace", width: 34, color: C.ink } }, p.searchOpts.fdr >= 1 ? "none" : p.searchOpts.fdr.toFixed(2)),
+                    h("span", { style: { color: p.searchOpts.fdr >= 1 ? C.mut : C.sig, fontWeight: 600, whiteSpace: "nowrap" } }, p.searchOpts.fdr >= 1 ? "(all " + rows0.length + " lists)" : "(" + sig + " significant)")),
                   h("input", { value: p.searchOpts.facet, onChange: e => p.setSearchOpts(o => ({ ...o, facet: e.target.value })), placeholder: "Filter facet\u2026", style: { width: 130, padding: "6px 9px", border: "1px solid " + C.line, borderRadius: 7, fontSize: 12, outline: "none", color: C.ink } }))),
               (info.remapped.length || info.missing.length) ? h("div", { style: { padding: "0 20px 12px", display: "flex", flexDirection: "column", gap: 8 } },
                 info.remapped.length ? h(this.RemappedGenes, { pairs: info.remapped }) : null,
@@ -1168,8 +1174,8 @@ class Component extends DCLogic {
           h("div", { style: { display: "flex", gap: 8, alignItems: "stretch" } },
             h("button", { onClick: () => { const q = v => { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }; let csv = ["gene", ...res.ffCols, ...res.cfCols, ...(res.tfCols || [])].map(q).join(",") + "\n"; res.rows.forEach(r => { csv += [r.gene, ...r.ff, ...r.cf, ...(r.tf || [])].map(q).join(",") + "\n"; }); const blob = new Blob([csv], { type: "text/csv;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "genedex-fingerprint.csv"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }, style: { flex: 1, border: "1px solid " + C.line, background: C.bg, color: C.sub, borderRadius: 8, padding: "8px", fontSize: 12, cursor: "pointer" } }, "Download CSV"),
             h("div", { style: { flex: 1, display: "flex", border: "1px solid " + C.line, borderRadius: 8, overflow: "hidden", background: C.bg } },
-              h("span", { style: { display: "flex", alignItems: "center", padding: "0 9px", fontSize: 12, color: C.sub, borderRight: "1px solid " + C.line2, whiteSpace: "nowrap" } }, "PNG"),
-              [["150", 150], ["300", 300], ["600", 600]].map(([lbl, d], i) => h("button", { key: lbl, onClick: () => this.exportFingerprintPNG(viewRes, p.fpOpts.mode, d, p.fpOpts), title: "Download at " + d + " DPI", style: { flex: 1, border: "none", borderLeft: i ? "1px solid " + C.line2 : "none", background: "transparent", color: d === 300 ? C.ffDark : C.sub, fontWeight: d === 300 ? 600 : 400, padding: "8px 0", fontSize: 12, cursor: "pointer" } }, lbl)))),
+              h("button", { onClick: () => this.exportFingerprintPNG(viewRes, p.fpOpts.mode, 600, p.fpOpts), title: "Download PNG at 600 DPI", style: { display: "flex", alignItems: "center", padding: "0 9px", fontSize: 12, fontWeight: 600, color: C.ink, border: "none", borderRight: "1px solid " + C.line2, background: C.panel, cursor: "pointer", whiteSpace: "nowrap" } }, "PNG"),
+              [["150", 150], ["300", 300], ["600", 600]].map(([lbl, d], i) => h("button", { key: lbl, onClick: () => this.exportFingerprintPNG(viewRes, p.fpOpts.mode, d, p.fpOpts), title: "Download at " + d + " DPI", style: { flex: 1, border: "none", borderLeft: i ? "1px solid " + C.line2 : "none", background: "transparent", color: d === 600 ? C.ffDark : C.sub, fontWeight: d === 600 ? 600 : 400, padding: "8px 0", fontSize: 12, cursor: "pointer" } }, lbl)))),
           h("div", { style: { display: "flex", border: "1px solid " + C.line, borderRadius: 8, overflow: "hidden", background: C.bg } },
             h("span", { style: { display: "flex", alignItems: "center", padding: "0 9px", fontSize: 12, color: C.sub, borderRight: "1px solid " + C.line2, whiteSpace: "nowrap" } }, "Refs CSV"),
             [["Grid", "grid", "Genes \u00d7 facets, each cell listing the source references behind the hit"], ["Long", "long", "One row per gene \u00d7 facet \u00d7 source list"]].map(([lbl, lay, tip], i) => h("button", { key: lay, onClick: () => this.exportFingerprintRefs(viewRes, p.fpInput, p.fpOpts, lay), title: tip, style: { flex: 1, border: "none", borderLeft: i ? "1px solid " + C.line2 : "none", background: "none", color: C.sub, padding: "8px 0", fontSize: 12, cursor: "pointer" } }, lbl))),
@@ -1264,7 +1270,7 @@ class Component extends DCLogic {
       const ctxText = G.compute.norm(String(p.ctxInput || "").split(/[\s,;]+/)).length ? p.ctxInput : (p.searchInput || p.fpInput || "");
       let res = null, ctxErr = null;
       const ctxOpts = p.ctxOpts || { process: "", minStudies: 1, direction: "Any", hideEmptyGenes: false };
-      const fdrMax = (p.searchOpts && p.searchOpts.fdr != null) ? Number(p.searchOpts.fdr) : 0.05;
+      const fdrMax = (p.searchOpts && p.searchOpts.fdr != null) ? Number(p.searchOpts.fdr) : 1;
       try {
         const genesIn = G.compute.norm(String(ctxText || "").split(/[\s,;]+/));
         if (genesIn.length) res = this.contextMatrix(genesIn, { fdr: fdrMax });
@@ -1688,8 +1694,291 @@ class Component extends DCLogic {
       h("div", { style: { flex: 1, minHeight: 0 } },
         p.wbTab === "search" && renderSearch(),
         p.wbTab === "fingerprint" && renderFingerprint(),
-        p.wbTab === "contexts" && renderContexts()),
+        p.wbTab === "contexts" && renderContexts(),
+        p.wbTab === "similarity" && h(this.JaccardModule, p)),
       toast && h("div", { style: { position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: C.act, color: "#fff", padding: "9px 18px", borderRadius: 8, fontSize: 14, zIndex: 200, animation: "gdxfade .2s" } }, toast));
+  };
+
+  // =====================================================================
+  //  SIMILARITY (Jaccard / overlap coefficient between gene sets)
+  // =====================================================================
+  JaccardModule = (p) => {
+    const h = React.createElement, C = this.C, G = window.Genedex;
+    const { useState, useMemo } = React;
+    const mono = "'IBM Plex Mono',monospace";
+    const [mode, setMode] = useState("lists");
+    const metric = "jaccard";
+    const [order, setOrder] = useState("cluster");
+    const [scale, setScale] = useState("max");
+    const [refSel, setRefSel] = useState([]);
+    const [refQ, setRefQ] = useState("");
+    const [refFacet, setRefFacet] = useState("");
+    const [userLists, setUserLists] = useState([]);
+    const [newName, setNewName] = useState("");
+    const [newGenes, setNewGenes] = useState("");
+    const [useQuery, setUseQuery] = useState(true);
+    const [useHits, setUseHits] = useState(true);
+    const [hitP, setHitP] = useState(0.05);
+    const [maxHits, setMaxHits] = useState(25);
+    const [facetClass, setFacetClass] = useState("all");
+    const [facetSel, setFacetSel] = useState([]);
+    const [facetQ, setFacetQ] = useState("");
+    const [sel, setSel] = useState(null);
+    const [hover, setHover] = useState(null);
+    const [toast, setToast] = useState("");
+    const metaByGl = useMemo(() => { const m = {}; G.lists.forEach(l => m[l.gl] = l); return m; }, []);
+    const norm = (t) => G.compute.norm(String(t || "").split(/[\s,;]+/));
+    const copy = (txt, msg) => { try { navigator.clipboard.writeText(txt); } catch (e) {} setToast(msg || "Copied"); setTimeout(() => setToast(""), 1400); };
+
+    // facet -> curated lists carrying it (functional / cellular atoms, tissue)
+    const facetLists = useMemo(() => {
+      const m = {};
+      const add = (f, gl) => { (m[f] = m[f] || []).push(gl); };
+      G.lists.forEach(l => {
+        (l.ffAtoms || []).forEach(f => add(f, l.gl));
+        (l.cfAtoms || []).forEach(f => add(f, l.gl));
+        if (l.tissue && G.facetMeta[l.tissue] && G.facetMeta[l.tissue].type === "tf") add(l.tissue, l.gl);
+      });
+      return m;
+    }, []);
+    const facetType = (f) => (G.facetMeta[f] && G.facetMeta[f].type) || "ff";
+    const allFacets = useMemo(() => Object.keys(facetLists).sort((a, b) => facetLists[b].length - facetLists[a].length || a.localeCompare(b)), [facetLists]);
+    const facetGenes = (f) => { const u = new Set(); (facetLists[f] || []).forEach(gl => { const l = metaByGl[gl]; if (l) l.genes.forEach(g => u.add(g)); }); return u; };
+
+    const hitRows = useMemo(() => (p.searchRes ? p.searchRes.rows : []).filter(r => r.fdr <= hitP).slice().sort((a, b) => a.fdr - b.fdr), [p.searchRes, hitP]);
+
+    const kindColor = { query: C.act, user: C.blue, ref: C.sub, hit: C.sig, ff: C.ff, cf: C.cf, tf: C.tf };
+    const kindLabel = { query: "Query", user: "User list", ref: "Reference", hit: "Search hit", ff: "Functional", cf: "Cellular", tf: "Tissue" };
+
+    const items = useMemo(() => {
+      const out = [];
+      if (mode === "lists") {
+        const q = norm(p.searchInput);
+        if (useQuery && q.length) out.push({ id: "query", label: "Current query", kind: "query", genes: new Set(q) });
+        [...userLists, ...(p.sessionLists || []).filter(sl => !userLists.some(u => u.name.toLowerCase() === sl.name.toLowerCase()))].forEach(u =>
+          out.push({ id: "u:" + u.name, label: u.name, kind: "user", genes: new Set(u.genes) }));
+        const seen = new Set();
+        refSel.forEach(gl => { const l = metaByGl[gl]; if (!l) return; seen.add(gl); out.push({ id: gl, label: gl + " \u00b7 " + (l.short || ""), kind: "ref", genes: new Set(l.genes) }); });
+        if (useHits) hitRows.filter(r => !seen.has(r.gl)).slice(0, maxHits).forEach(r => { const l = metaByGl[r.gl]; if (!l) return;
+          out.push({ id: r.gl, label: r.gl + " \u00b7 " + (l.short || ""), kind: "hit", genes: new Set(l.genes) }); });
+      } else {
+        facetSel.forEach(f => out.push({ id: "f:" + f, label: f, kind: facetType(f), genes: facetGenes(f) }));
+      }
+      return out.filter(it => it.genes.size > 0);
+    }, [mode, p.searchInput, useQuery, userLists, p.sessionLists, refSel, useHits, hitRows, maxHits, facetSel]);
+
+    const mat = useMemo(() => {
+      const n = items.length, inter = [];
+      for (let i = 0; i < n; i++) inter.push(new Array(n).fill(0));
+      for (let i = 0; i < n; i++) for (let j = i; j < n; j++) {
+        let c = 0; const A = items[i].genes, B = items[j].genes;
+        const sm = A.size <= B.size ? A : B, lg = sm === A ? B : A;
+        if (i === j) c = A.size; else sm.forEach(g => { if (lg.has(g)) c++; });
+        inter[i][j] = inter[j][i] = c;
+      }
+      const val = (i, j) => { const a = items[i].genes.size, b = items[j].genes.size, c = inter[i][j];
+        if (metric === "overlap") return Math.min(a, b) ? c / Math.min(a, b) : 0;
+        return (a + b - c) ? c / (a + b - c) : 0; };
+      let max = 0; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (i !== j) max = Math.max(max, val(i, j));
+      return { n, inter, val, max: max || 1 };
+    }, [items, metric]);
+
+    const ord = useMemo(() => {
+      const idx = items.map((_, i) => i);
+      if (order !== "cluster" || items.length < 3) return idx;
+      try { const r = this.hcluster(idx.map(String), (a, b) => mat.val(+a, +b), "average"); return r.order.map(Number); } catch (e) { return idx; }
+    }, [items, mat, order]);
+
+    const ramp = (t) => { t = Math.max(0, Math.min(1, t)); const a = [247, 249, 250], b = [6, 78, 72];
+      const k = Math.pow(t, 0.75); return "rgb(" + a.map((x, i) => Math.round(x + (b[i] - x) * k)).join(",") + ")"; };
+    const vmax = scale === "max" ? mat.max : 1;
+    const fmt = (v) => v === 0 ? "0" : v < 0.01 ? v.toExponential(0) : v.toFixed(2);
+
+    const exportCsv = () => {
+      const q = (v) => { v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      let csv = ["Set", ...ord.map(i => items[i].label)].map(q).join(",") + "\n";
+      ord.forEach(i => { csv += [items[i].label, ...ord.map(j => mat.val(i, j).toFixed(4))].map(q).join(",") + "\n"; });
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const a = document.createElement("a"); a.href = url; a.download = "genedex-" + metric + "-" + mode + ".csv"; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+
+    const label = (t, hint, help) => h("div", { style: { fontSize: 12, fontWeight: 600, color: C.sub, letterSpacing: ".03em", textTransform: "uppercase", marginBottom: 7, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 } },
+      h("span", { style: { display: "flex", alignItems: "center", gap: 5, minWidth: 0 } }, t,
+        help && h("span", { title: help, style: { flex: "0 0 auto", width: 18, height: 18, borderRadius: "50%", border: "1px solid " + C.line, background: C.panel, color: C.mut, fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "help", textTransform: "none", letterSpacing: 0 } }, "?")),
+      hint != null && h("span", { style: { color: C.mut, textTransform: "none", fontWeight: 500, letterSpacing: 0 } }, hint));
+    const input = (val, set, ph, extra) => h("input", { value: val, onChange: e => set(e.target.value), placeholder: ph,
+      style: { width: "100%", padding: "8px 10px", border: "1px solid " + C.line, borderRadius: 8, fontSize: 13, color: C.ink, background: C.bg, outline: "none", ...(extra || {}) } });
+    const check = (on, set, text) => h("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink, cursor: "pointer" } },
+      h("input", { type: "checkbox", checked: on, onChange: e => set(e.target.checked), style: { accentColor: C.ff, width: 16, height: 16 } }), text);
+    const smallBtn = (t, onClick, primary) => h("button", { onClick, style: { border: primary ? "none" : "1px solid " + C.line, background: primary ? C.act : C.bg, color: primary ? "#fff" : C.sub, borderRadius: 7, padding: "6px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer" } }, t);
+    const pickRow = (key, on, title, meta, onClick, color) => h("button", { key, onClick,
+      style: { display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", border: "none", borderBottom: "1px solid " + C.line2, background: on ? C.ffBg : "transparent", padding: "6px 8px", cursor: "pointer", fontSize: 12, color: C.ink } },
+      h("span", { style: { width: 14, height: 14, flex: "0 0 auto", borderRadius: 4, border: "1.5px solid " + (on ? C.ff : C.line), background: on ? C.ff : C.bg, color: "#fff", fontSize: 10, lineHeight: "12px", textAlign: "center" } }, on ? "\u2713" : ""),
+      color && h("span", { style: { width: 6, height: 6, borderRadius: 2, background: color, flex: "0 0 auto" } }),
+      h("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, title),
+      h("span", { style: { color: C.mut, fontFamily: mono, fontSize: 11, flex: "0 0 auto" } }, meta));
+    const box = (children) => h("div", { style: { border: "1px solid " + C.line, borderRadius: 8, maxHeight: 210, overflowY: "auto", background: C.bg } }, children);
+
+    const refMatches = useMemo(() => {
+      const q = refQ.trim().toLowerCase();
+      const fq = refFacet ? refFacet.toLowerCase() : null;
+      const byFacet = (l) => !fq || [...(l.ff || []), ...(l.cf || []), ...(l.ffAtoms || []), ...(l.cfAtoms || []), l.tissue].some(f => f && String(f).toLowerCase() === fq);
+      const byText = (l) => !q || [l.gl, l.short, l.author, l.tissue, ...(l.ff || []), ...(l.cf || [])].filter(Boolean).join(" ").toLowerCase().includes(q);
+      const src = (q || fq) ? G.lists.filter(l => byFacet(l) && byText(l)) : G.lists.filter(l => refSel.includes(l.gl));
+      return { total: src.length, rows: src.slice(0, 60), all: src };
+    }, [refQ, refSel, refFacet]);
+    const facetMatches = useMemo(() => {
+      const q = facetQ.trim().toLowerCase();
+      return allFacets.filter(f => (facetClass === "all" || facetType(f) === facetClass) && (!q || f.toLowerCase().includes(q))).slice(0, 60);
+    }, [facetQ, facetClass, allFacets]);
+    const toggle = (arr, set, v) => set(arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]);
+    const addUser = () => { const g = norm(newGenes); if (!g.length) return; const nm = newName.trim() || "My list " + (userLists.length + 1);
+      setUserLists(l => [...l.filter(x => x.name.toLowerCase() !== nm.toLowerCase()), { name: nm, genes: g }]); setNewName(""); setNewGenes(""); };
+    const facetsFromHits = () => { const s = new Set(); hitRows.forEach(r => { const l = metaByGl[r.gl]; if (!l) return; [...(l.ffAtoms || []), ...(l.cfAtoms || [])].forEach(f => { if (facetClass === "all" || facetType(f) === facetClass) s.add(f); }); if (l.tissue && facetLists[l.tissue] && (facetClass === "all" || facetClass === "tf")) s.add(l.tissue); });
+      setFacetSel([...s].sort((a, b) => (facetLists[b] || []).length - (facetLists[a] || []).length).slice(0, 40)); };
+
+    const rail = h("div", { style: { width: 320, flex: "0 0 auto", borderRight: "1px solid " + C.line, background: C.bg, padding: 18, overflowY: "auto", display: "flex", flexDirection: "column", gap: 18 } },
+      h("div", null, label("Compare by", mode === "lists" ? "gene lists" : "facets", "Gene list: compare individual gene sets (your query, your own lists, curated reference lists and search hits). AD facet: pool all curated lists sharing a facet into one gene set, then compare facets."), h(this.Seg, { value: mode, onChange: v => { setMode(v); setSel(null); }, options: [{ v: "lists", l: "Gene list" }, { v: "facets", l: "AD facet" }], accent: C.ff }),
+        h("div", { style: { fontSize: 12, color: C.mut, lineHeight: 1.5, marginTop: 6 } }, mode === "lists" ? "Each row is one gene list." : "Each row is one facet: the union of all lists carrying it.")),
+      h("div", null, label("Metric", null, "Jaccard index = shared genes \u00f7 all distinct genes in either set. 1 = identical sets, 0 = no genes in common. Penalises differences in set size."), h("div", { style: { fontSize: 13, color: C.ink } }, "Jaccard index"),
+        h("div", { style: { fontSize: 12, color: C.mut, marginTop: 4, fontFamily: mono } }, "|A\u2229B| / |A\u222aB|")),
+      mode === "lists" ? [
+        h("div", { key: "q", style: { display: "flex", flexDirection: "column", gap: 8 } }, label("Query & user lists", null, "Include the genes currently in Gene Search, and add your own lists by pasting gene symbols. Lists live only in this session."),
+          check(useQuery, setUseQuery, "Include current query (" + norm(p.searchInput).length + " genes)"),
+          userLists.map(u => h("div", { key: u.name, style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, padding: "5px 8px", background: C.blueBg, borderRadius: 6 } },
+            h("span", { style: { flex: 1, fontWeight: 600, color: C.ink } }, u.name), h("span", { style: { fontFamily: mono, color: C.mut } }, u.genes.length),
+            h("button", { onClick: () => setUserLists(l => l.filter(x => x !== u)), "aria-label": "Remove", style: { border: "none", background: "none", color: C.mut, cursor: "pointer", fontSize: 14 } }, "\u00d7"))),
+          input(newName, setNewName, "List name (optional)"),
+          h("textarea", { value: newGenes, onChange: e => setNewGenes(e.target.value), placeholder: "Paste genes for a new list\u2026", style: { width: "100%", height: 70, padding: "8px 10px", border: "1px solid " + C.line, borderRadius: 8, fontSize: 13, fontFamily: mono, color: C.ink, resize: "vertical", outline: "none" } }),
+          h("div", null, smallBtn("Add list", addUser, true))),
+        h("div", { key: "r" }, label("Reference lists", refSel.length + " selected", "Curated Genedex lists. Filter by facet with the dropdown and/or search by GL ID, name, author or facet; tick lists to add them, or use Select all."),
+          h("select", { value: refFacet, onChange: e => setRefFacet(e.target.value), "aria-label": "Filter by facet",
+            style: { width: "100%", padding: "8px 10px", border: "1px solid " + C.line, borderRadius: 8, fontSize: 13, color: refFacet ? C.ink : C.sub, background: C.bg, marginBottom: 6 } },
+            h("option", { value: "" }, "Any facet"),
+            [["ff", "Functional"], ["cf", "Cellular"], ["tf", "Tissue"]].map(([t, nm]) => h("optgroup", { key: t, label: nm },
+              allFacets.filter(f => facetType(f) === t).slice().sort((a, b) => a.localeCompare(b)).map(f => h("option", { key: f, value: f }, f + " (" + facetLists[f].length + ")"))))),
+          input(refQ, setRefQ, "Search GL ID, name, author, facet\u2026", { marginBottom: 6 }),
+          refMatches.rows.length ? box(refMatches.rows.map(l => pickRow(l.gl, refSel.includes(l.gl), l.gl + " \u00b7 " + (l.short || ""), l.genes.length, () => toggle(refSel, setRefSel, l.gl)))) : h("div", { style: { fontSize: 12, color: C.mut } }, (refQ || refFacet) ? "No matching lists." : "Pick a facet or search to add curated lists."),
+          h("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 6 } },
+            (refQ || refFacet) && refMatches.total > 0 && smallBtn("Select all " + refMatches.total, () => setRefSel(s => [...new Set([...s, ...refMatches.all.map(l => l.gl)])])),
+            refSel.length > 0 && smallBtn("Clear", () => setRefSel([])),
+            refMatches.total > refMatches.rows.length && h("span", { style: { fontSize: 12, color: C.mut } }, "showing " + refMatches.rows.length + " of " + refMatches.total))),
+        h("div", { key: "h", style: { display: "flex", flexDirection: "column", gap: 8 } }, label("Search hits", hitRows.length + " pass", "Adds curated lists that were significantly enriched in your last Gene Search, keeping those at or below the adjusted p-value (FDR) threshold, best first, up to the max."),
+          check(useHits, setUseHits, "Include Gene Search hits"),
+          h("div", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.sub, opacity: useHits ? 1 : .5 } }, "Adj. p \u2264",
+            h("select", { value: hitP, disabled: !useHits, onChange: e => setHitP(+e.target.value), style: { padding: "5px 6px", border: "1px solid " + C.line, borderRadius: 6, fontSize: 13, fontFamily: mono } }, [0.001, 0.01, 0.05, 0.1, 0.25].map(v => h("option", { key: v, value: v }, v))),
+            "max", h("select", { value: maxHits, disabled: !useHits, onChange: e => setMaxHits(+e.target.value), style: { padding: "5px 6px", border: "1px solid " + C.line, borderRadius: 6, fontSize: 13, fontFamily: mono } }, [10, 25, 50, 100].map(v => h("option", { key: v, value: v }, v)))),
+          !p.searchRes && h("div", { style: { fontSize: 12, color: C.mut } }, "Run Gene Search first to use hits."))
+      ] : [
+        h("div", { key: "fp" }, label("Facets", facetSel.length + " selected", "Each facet becomes one gene set: the union of genes from every curated list carrying it. Choose a class, then tick facets, or use Top 15 / From hits."),
+          h("div", { style: { marginBottom: 8 } }, h(this.Seg, { value: facetClass, onChange: setFacetClass, options: [{ v: "all", l: "All classes" }, { v: "ff", l: "Functional" }, { v: "cf", l: "Cellular" }, { v: "tf", l: "Tissue" }], accent: C.ff })),
+          input(facetQ, setFacetQ, "Filter " + (facetClass === "all" ? "" : { ff: "functional ", cf: "cellular ", tf: "tissue " }[facetClass]) + "facets\u2026", { marginBottom: 6 }),
+          box(facetMatches.map(f => pickRow(f, facetSel.includes(f), f, (facetLists[f] || []).length, () => toggle(facetSel, setFacetSel, f), kindColor[facetType(f)]))),
+          h("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 } },
+            smallBtn("Top 15 by # lists", () => setFacetSel(allFacets.filter(f => facetClass === "all" || facetType(f) === facetClass).slice(0, 15))),
+            p.searchRes && smallBtn("From hits (adj. p \u2264 " + hitP + ")", facetsFromHits),
+            facetSel.length > 0 && smallBtn("Clear", () => setFacetSel([])))),
+        h("div", { key: "fn", style: { fontSize: 12, color: C.mut, lineHeight: 1.5 } }, "Each facet is the union of genes across every curated list carrying it; pairwise similarity is computed between these aggregates.")
+      ],
+      h("div", null, label("Order", order === "cluster" ? "similarity" : "as added", "Clustered: rows and columns reordered by average-linkage hierarchical clustering on 1 \u2212 Jaccard, so similar sets sit together. Input: the order you added them."), h(this.Seg, { value: order, onChange: setOrder, options: [{ v: "cluster", l: "Clustered" }, { v: "input", l: "Input" }], accent: C.ff }),
+        h("div", { style: { fontSize: 12, color: C.mut, lineHeight: 1.5, marginTop: 6 } }, order === "cluster" ? "Similar sets are placed next to each other." : "Input keeps sets in the order you added them.")),
+      h("div", null, label("Colour scale", scale === "max" ? "relative" : "absolute", "0 \u2013 max stretches colours to the highest off-diagonal value, which helps when all values are small. 0 \u2013 1 uses the absolute scale, so different matrices can be compared."), h(this.Seg, { value: scale, onChange: setScale, options: [{ v: "max", l: "0 \u2013 max" }, { v: "unit", l: "0 \u2013 1" }], accent: C.ff }),
+        h("div", { style: { fontSize: 12, color: C.mut, lineHeight: 1.5, marginTop: 6 } }, scale === "max" ? "Darkest colour = highest value in this matrix." : "Darkest colour = identical sets (J = 1).")),
+      h("div", { style: { borderTop: "1px solid " + C.line2, paddingTop: 14, fontSize: 12, color: C.mut, lineHeight: 1.6 } }, "Each cell = Jaccard index between two gene sets: shared genes \u00f7 all distinct genes in either. 1 = identical, 0 = nothing in common. Hover a cell for counts; click it to see the shared genes."));
+
+    const n = items.length;
+    const cs = Math.max(12, Math.min(36, Math.floor(620 / Math.max(n, 1))));
+    const labW = 240, topH = 170;
+    const showNum = cs >= 30;
+    const hv = hover, sl = sel;
+    const matrix = n < 2
+      ? h("div", { style: { padding: 40, color: C.mut, fontSize: 14, maxWidth: 520, lineHeight: 1.6 } },
+          h("div", { style: { fontSize: 18, fontWeight: 600, color: C.ink, marginBottom: 6 } }, "Select at least two sets"),
+          mode === "lists" ? "Add user lists, pick reference lists, or include Gene Search hits from the left rail." : "Pick facets from the rail, or use \u201cTop 15\u201d to start.")
+      : h("div", { style: { display: "grid", gridTemplateColumns: labW + "px " + (cs * n) + "px", gridTemplateRows: topH + "px " + (cs * n) + "px", width: "max-content" } },
+          h("div", null),
+          h("div", { style: { position: "relative" } }, ord.map((i, c) => h("div", { key: items[i].id,
+            style: { position: "absolute", left: c * cs + cs / 2, bottom: 4, transformOrigin: "0 100%", transform: "rotate(-55deg)", whiteSpace: "nowrap", fontSize: 11.5, color: hv && hv.j === i ? C.ink : C.sub, fontWeight: hv && hv.j === i ? 600 : 400, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" } }, items[i].label))),
+          h("div", null, ord.map(i => h("div", { key: items[i].id, title: items[i].label + " \u2014 " + kindLabel[items[i].kind] + ", " + items[i].genes.size + " genes",
+            style: { height: cs, display: "flex", alignItems: "center", gap: 7, paddingRight: 10, fontSize: 12, color: hv && hv.i === i ? C.ink : C.sub, fontWeight: hv && hv.i === i ? 600 : 400 } },
+            h("span", { style: { width: 7, height: 7, borderRadius: 2, background: kindColor[items[i].kind], flex: "0 0 auto" } }),
+            h("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" } }, items[i].label)))),
+          h("div", { onMouseLeave: () => setHover(null), style: { display: "grid", gridTemplateColumns: "repeat(" + n + "," + cs + "px)", gridAutoRows: cs + "px", border: "1px solid " + C.line } },
+            ord.flatMap(i => ord.map(j => { const v = mat.val(i, j), diag = i === j, t = v / vmax;
+              const on = sl && ((sl.i === i && sl.j === j) || (sl.i === j && sl.j === i));
+              return h("div", { key: i + "-" + j, onMouseEnter: () => setHover({ i, j }), onClick: () => !diag && setSel({ i, j }),
+                style: { background: diag ? C.panel2 : ramp(t), outline: on ? "2px solid " + C.act : "none", outlineOffset: -2, cursor: diag ? "default" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10.5, fontFamily: mono, color: t > .55 ? "#fff" : C.ink, borderRight: "1px solid rgba(255,255,255,.5)", borderBottom: "1px solid rgba(255,255,255,.5)" } },
+                showNum && !diag ? fmt(v) : ""); }))));
+
+    const hoverInfo = hv && hv.i !== hv.j && items[hv.i] && items[hv.j] ? (() => { const A = items[hv.i], B = items[hv.j], c = mat.inter[hv.i][hv.j];
+      return h("div", { style: { fontFamily: mono, fontSize: 12, color: C.sub } }, A.label + "  \u00d7  " + B.label + "   \u2229 " + c + "  \u222a " + (A.genes.size + B.genes.size - c) + "   " + (metric === "jaccard" ? "J" : "OC") + " = " + mat.val(hv.i, hv.j).toFixed(3)); })()
+      : h("div", { style: { fontSize: 12, color: C.mut } }, "Hover a cell for counts; click to see shared genes.");
+
+    const legend = h("div", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.sub, fontFamily: mono } }, "0",
+      h("div", { style: { width: 140, height: 10, borderRadius: 3, background: "linear-gradient(90deg," + [0, .25, .5, .75, 1].map(ramp).join(",") + ")" } }), fmt(vmax));
+
+    const exportPng = (dpi) => {
+      const sc = dpi / 96, cell = Math.max(14, Math.min(40, Math.floor(700 / n))), font = "'IBM Plex Sans', Arial, sans-serif";
+      const meas = document.createElement("canvas").getContext("2d"); meas.font = "12px " + font;
+      const lw = Math.min(280, Math.max(...items.map(it => meas.measureText(it.label).width)) + 24);
+      const pad = 24, topH = Math.round(lw * 0.82) + 10, legH = 54, W = pad * 2 + lw + cell * n, H = pad * 2 + 28 + topH + cell * n + legH;
+      const cv = document.createElement("canvas"); cv.width = Math.round(W * sc); cv.height = Math.round(H * sc);
+      const x = cv.getContext("2d"); x.scale(sc, sc); x.fillStyle = "#fff"; x.fillRect(0, 0, W, H);
+      x.fillStyle = C.ink; x.font = "600 15px " + font; x.textBaseline = "top";
+      x.fillText((mode === "lists" ? "Gene list" : "AD facet") + " similarity (Jaccard index)", pad, pad);
+      const ox = pad + lw, oy = pad + 28 + topH;
+      const clip = (t, w) => { if (x.measureText(t).width <= w) return t; while (t.length > 1 && x.measureText(t + "\u2026").width > w) t = t.slice(0, -1); return t + "\u2026"; };
+      x.font = "12px " + font; x.textBaseline = "middle";
+      ord.forEach((i, r) => { x.fillStyle = kindColor[items[i].kind]; x.fillRect(pad, oy + r * cell + cell / 2 - 3.5, 7, 7);
+        x.fillStyle = C.sub; x.textAlign = "right"; x.fillText(clip(items[i].label, lw - 26), ox - 8, oy + r * cell + cell / 2); });
+      ord.forEach((i, c) => { x.save(); x.translate(ox + c * cell + cell / 2, oy - 6); x.rotate(-55 * Math.PI / 180); x.textAlign = "left"; x.fillStyle = C.sub; x.fillText(clip(items[i].label, lw - 10), 0, 0); x.restore(); });
+      x.textAlign = "center"; x.font = Math.max(9, Math.min(11, cell / 3)) + "px 'IBM Plex Mono', monospace";
+      ord.forEach((i, r) => ord.forEach((j, c) => { const v = mat.val(i, j), t = v / vmax, cx = ox + c * cell, cy = oy + r * cell;
+        x.fillStyle = i === j ? C.panel2 : ramp(t); x.fillRect(cx, cy, cell, cell);
+        x.strokeStyle = "rgba(255,255,255,.6)"; x.lineWidth = 1; x.strokeRect(cx + .5, cy + .5, cell - 1, cell - 1);
+        if (cell >= 30 && i !== j) { x.fillStyle = t > .55 ? "#fff" : C.ink; x.fillText(fmt(v), cx + cell / 2, cy + cell / 2); } }));
+      x.strokeStyle = C.line; x.strokeRect(ox + .5, oy + .5, cell * n - 1, cell * n - 1);
+      const ly = oy + cell * n + 24, gw = 160, g = x.createLinearGradient(ox, 0, ox + gw, 0);
+      [0, .25, .5, .75, 1].forEach(s => g.addColorStop(s, ramp(s)));
+      x.fillStyle = g; x.fillRect(ox + 16, ly, gw, 10);
+      x.font = "12px 'IBM Plex Mono', monospace"; x.fillStyle = C.sub; x.textAlign = "left"; x.fillText("0", ox, ly + 5); x.fillText(fmt(vmax) + "  Jaccard", ox + gw + 24, ly + 5);
+      cv.toBlob(b => { const url = URL.createObjectURL(b); const a = document.createElement("a"); a.href = url; a.download = "genedex-similarity-" + mode + "-" + dpi + "dpi.png"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }, "image/png");
+    };
+    const pngGroup = h("div", { style: { display: "flex", border: "1px solid " + C.line, borderRadius: 7, overflow: "hidden", background: C.bg } },
+      h("button", { onClick: () => exportPng(600), title: "Download PNG at 600 DPI", style: { display: "flex", alignItems: "center", padding: "0 9px", fontSize: 12, fontWeight: 600, color: C.ink, border: "none", borderRight: "1px solid " + C.line2, background: C.panel, cursor: "pointer" } }, "PNG"),
+      [150, 300, 600].map((d, k) => h("button", { key: d, onClick: () => exportPng(d), title: "Download at " + d + " DPI", style: { border: "none", borderLeft: k ? "1px solid " + C.line2 : "none", background: "transparent", color: d === 600 ? C.ffDark : C.sub, fontWeight: d === 600 ? 600 : 400, padding: "6px 10px", fontSize: 12, cursor: "pointer" } }, d)));
+
+    const kinds = [...new Set(items.map(it => it.kind))];
+    const head = h("div", { style: { display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", padding: "14px 22px", borderBottom: "1px solid " + C.line, background: C.bg } },
+      h("div", { style: { fontSize: 16, fontWeight: 600, color: C.ink } }, (mode === "lists" ? "Gene list" : "AD facet") + " similarity", h("span", { style: { fontWeight: 400, color: C.mut, marginLeft: 8, fontSize: 14 } }, n + " sets \u00b7 " + (metric === "jaccard" ? "Jaccard" : "Overlap coefficient"))),
+      h("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } }, kinds.map(k => h("span", { key: k, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.sub } }, h("span", { style: { width: 8, height: 8, borderRadius: 2, background: kindColor[k] } }), kindLabel[k]))),
+      h("div", { style: { flex: 1 } }), n >= 2 && legend, n >= 2 && smallBtn("Download CSV", exportCsv), n >= 2 && pngGroup);
+
+    const drawer = sl && items[sl.i] && items[sl.j] && (() => { const A = items[sl.i], B = items[sl.j];
+      const shared = [...A.genes].filter(g => B.genes.has(g)).sort(); const c = shared.length, u = A.genes.size + B.genes.size - c;
+      const stat = (k, v) => h("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 13, padding: "5px 0", borderBottom: "1px solid " + C.line2 } }, h("span", { style: { color: C.sub } }, k), h("span", { style: { fontFamily: mono, color: C.ink } }, v));
+      return h("div", { style: { width: 320, flex: "0 0 auto", borderLeft: "1px solid " + C.line, background: C.bg, padding: 18, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12 } },
+        h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "start", gap: 8 } },
+          h("div", { style: { fontSize: 14, fontWeight: 600, color: C.ink, lineHeight: 1.4 } }, A.label, h("div", { style: { color: C.mut, fontWeight: 400 } }, "vs"), B.label),
+          h("button", { onClick: () => setSel(null), "aria-label": "Close", style: { border: "none", background: "none", fontSize: 18, color: C.mut, cursor: "pointer" } }, "\u00d7")),
+        h("div", null, stat("|A|", A.genes.size), stat("|B|", B.genes.size), stat("|A \u2229 B|", c), stat("|A \u222a B|", u),
+          stat("Jaccard", (u ? c / u : 0).toFixed(4))),
+        h("div", null, label("Shared genes", c),
+          c ? h("div", { style: { fontFamily: mono, fontSize: 12, lineHeight: 1.7, color: C.ink, background: C.panel, border: "1px solid " + C.line, borderRadius: 8, padding: "8px 10px", maxHeight: 260, overflowY: "auto", wordBreak: "break-word" } }, shared.join(", "))
+            : h("div", { style: { fontSize: 12, color: C.mut } }, "No shared genes.")),
+        c > 0 && h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+          smallBtn("Copy genes", () => copy(shared.join("\n"), "Copied " + c + " genes")),
+          smallBtn("Search these", () => { p.setSearchInput(shared.join("\n")); p.setWbTab("search"); }, true)));
+    })();
+
+    return h("div", { style: { display: "flex", height: "100%", minHeight: 0 } }, rail,
+      h("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: C.canvas } }, head,
+        h("div", { style: { padding: "8px 22px", borderBottom: "1px solid " + C.line, background: C.panel } }, hoverInfo),
+        h("div", { style: { flex: 1, overflow: "auto", padding: "18px 22px 40px" } }, matrix)),
+      drawer,
+      toast && h("div", { style: { position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: C.act, color: "#fff", padding: "9px 18px", borderRadius: 8, fontSize: 14, zIndex: 50 } }, toast));
   };
 
   // generic right-side detail drawer
