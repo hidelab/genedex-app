@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hidelab.github.io/genedex-app/sitemap.xml

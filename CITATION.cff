@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+title: "GeneDeX: Gene Set Discovery & Facet Analysis in Alzheimer's Disease"
+message: "If you use GeneDeX in your research, please cite it using the metadata below."
+type: software
+authors:
+  - family-names: Pegoraro
+    given-names: Giulia
+  - family-names: Gupta
+    given-names: Sumeet
+  - name: Hide Lab
+repository-code: "https://github.com/hidelab/genedex-app"
+url: "https://hidelab.github.io/genedex-app/"
+license: MIT
+version: 1.1.0
+date-released: "2026-11-06"
+keywords:
+  - Alzheimer's disease
+  - gene set enrichment
+  - functional genomics
+  - transcriptomics
+  - neuroinflammation
+  - single-cell RNA-seq
