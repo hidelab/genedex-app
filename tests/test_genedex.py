@@ -38,6 +38,7 @@ def test_web_deployment_root_assets():
     expected_web = [
         "index.html",
         "genedex-data.js",
+        "facet-hierarchy.js",
         "support.js",
         "css/genedex.css",
         "js/genedex-data.js",

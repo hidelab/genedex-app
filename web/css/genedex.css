@@ -1,7 +1,7 @@
 /* Genedex application stylesheet */
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#1b2129;background:#f4f6f8}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#1b2129;background:#ffffff}
 @keyframes gdxspin{to{transform:rotate(360deg)}}
 @keyframes gdxfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 ::-webkit-scrollbar{width:10px;height:10px}
@@ -44,32 +44,51 @@ textarea{resize:vertical}
   .gdx-hero-pad{padding:32px 18px 36px}
   .gdx-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-.gdx-ctx-banner{background:#fbf0e1;border:1px solid #f0cd97;color:#a05504;border-radius:8px;padding:10px 14px;font-size:14px;line-height:1.45}
-.gdx-ctx-filters{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end}
-.gdx-ctx-field{display:flex;flex-direction:column;gap:5px;min-width:0}
-.gdx-ctx-field label{font-size:12px;font-weight:600;color:#586374;letter-spacing:.03em;text-transform:uppercase}
-.gdx-ctx-select{border:1px solid #e6e9ed;border-radius:8px;padding:7px 10px;font-size:14px;color:#1b2129;background:#fff;min-width:160px}
-.gdx-ctx-select:focus{outline:2px solid #0b8177;outline-offset:2px}
-.gdx-ctx-wrap{overflow:auto;flex:1;min-height:0}
-.gdx-ctx-table{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%}
-.gdx-ctx-table th,.gdx-ctx-table td{border-bottom:1px solid #eef1f4;border-right:1px solid #eef1f4;padding:8px 10px;text-align:center;vertical-align:middle;background:#fff}
-.gdx-ctx-table thead th{position:sticky;top:0;z-index:3;background:#fafbfc;font-weight:600;font-size:12px;color:#586374}
-.gdx-ctx-sticky-col{position:sticky;left:0;z-index:2;text-align:left;font-weight:500;color:#1b2129;max-width:240px;white-space:normal;background:#fff}
-.gdx-ctx-table thead .gdx-ctx-sticky-col{z-index:4;background:#fafbfc}
-.gdx-ctx-sticky-sum{position:sticky;right:0;z-index:2;white-space:nowrap;font-size:12px;color:#586374;background:#fafbfc;font-weight:500}
-.gdx-ctx-table thead .gdx-ctx-sticky-sum{z-index:4}
-.gdx-ctx-gene{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#1b2129;font-weight:600}
-.gdx-ctx-cell{cursor:pointer;min-width:78px}
-.gdx-ctx-cell:hover{background:#e4f3f1}
-.gdx-ctx-cell-conflict{background:#fef3c7}
-.gdx-ctx-cell-conflict:hover{background:#fde68a}
-.gdx-ctx-cell:focus-visible{outline:2px solid #0b8177;outline-offset:-2px}
-.gdx-ctx-empty{color:#616c7b}
-.gdx-ctx-up{color:#d6453f;font-weight:600;white-space:nowrap}
-.gdx-ctx-dn{color:#2f6fb0;font-weight:600;white-space:nowrap}
-.gdx-ctx-uns{color:#616c7b;font-weight:500;white-space:nowrap}
-.gdx-ctx-conflict{background:#fde68a;color:#92400e;font-weight:600;border-radius:6px;padding:4px 7px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
-.gdx-ctx-n{font-weight:500;color:#586374}
+/* top bar */
+.gdx-nav-item{padding:15px 20px}
+.gdx-nav-item:hover{color:#1b2129!important}
+.gdx-nav-item:focus-visible{outline:2px solid #0b8177;outline-offset:-4px}
+.gdx-nav-menu button:hover span,.gdx-nav-menu button:focus-visible span{color:#0b8177!important}
+.gdx-nav-menu button:focus-visible{outline:none}
+.gdx-nav-menu button:focus-visible span:first-child{text-decoration:underline}
+@media (max-width:1000px){.gdx-nav-item{padding:15px 11px}}
+@media (max-width:900px){.gdx-nav-item{padding:15px 8px}.gdx-nav-ico{display:none}}
+/* home page, laid out like HumanBase: one wide search bar, then the three analyses' questions and links */
+.gdx-link:hover{text-decoration:underline!important}
+.gdx-link:focus-visible{outline:2px solid #0b8177;outline-offset:2px;border-radius:2px}
+.gdx-hb-search:focus-within{border-color:#0b8177!important;box-shadow:0 0 0 3px rgba(11,129,119,.18)!important}
+.gdx-hb-search button[type=submit]:hover:not(:disabled){background:#0a7469!important}
+@media (max-width:560px){
+  .gdx-hb-search{flex-direction:column}
+  .gdx-hb-pick{border-right:none!important;border-bottom:1px solid #e6e9ed}
+  .gdx-hb-search button[type=submit]{border-radius:0 0 3px 3px!important;min-height:42px}
+}
+/* Documentation: all sections on one page, with tabs on the left that stay in view and jump to each section */
+.gdx-doc-tabs{display:grid;grid-template-columns:190px minmax(0,1fr);gap:40px;align-items:start}
+.gdx-doc-tablist{position:sticky;top:16px}
+.gdx-doc-tab:hover{color:#1b2129!important}
+.gdx-doc-tab:focus-visible{outline:2px solid #0b8177;outline-offset:-2px}
+@media (max-width:720px){
+  .gdx-doc-tabs{grid-template-columns:1fr;gap:20px}
+  .gdx-doc-tablist{position:static;flex-direction:row!important;flex-wrap:wrap;border-left:none!important;border-bottom:1px solid #e6e9ed}
+  .gdx-doc-tab{width:auto!important;margin-left:0!important;margin-bottom:-1px;border-left:none!important;border-bottom:3px solid transparent!important}
+  .gdx-doc-tab[aria-current=true]{border-bottom-color:#0b8177!important}
+}
+/* Gene Search results: Table and Tree on one page, with tabs on the left that stay in view */
+.gdx-search-tabs{display:grid;grid-template-columns:66px minmax(0,1fr);align-items:start}
+/* like the Documentation's side tabs, but larger and darker so they stand out: 16 px labels and a 4 px teal bar
+   beside the one in view. The column stays 66 px wide: at 1440 px the results table needs the rest of the width */
+.gdx-search-tablist{position:sticky;top:12px;margin:14px 0 0 4px}
+.gdx-search-tab{padding:8px 8px!important;font-size:16px!important;color:#3d4652!important;border-left-width:4px!important}
+.gdx-search-tab[aria-current=true]{color:#0b8177!important;font-weight:700!important}
+.gdx-search-tab:hover{color:#1b2129!important}
+.gdx-search-tab:focus-visible{outline:2px solid #0b8177;outline-offset:-2px}
+@media (max-width:720px){
+  .gdx-search-tabs{grid-template-columns:1fr}
+  .gdx-search-tablist{position:static;flex-direction:row!important;flex-wrap:wrap;border-left:none!important;border-bottom:1px solid #e6e9ed;margin:8px 10px 0}
+  .gdx-search-tab{width:auto!important;margin-left:0!important;margin-bottom:-1px;border-left:none!important;border-bottom:3px solid transparent!important}
+  .gdx-search-tab[aria-current=true]{border-bottom-color:#0b8177!important}
+}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}
 }

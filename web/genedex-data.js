@@ -1567,7 +1567,13 @@
   }
   const CONTRAST_RE = /([A-Za-z0-9\u03b1\u03b2\u0391\u0392\-\/\+\.\s]{2,40}?)\s+vs\.?\s+([A-Za-z0-9\u03b1\u03b2\u0391\u0392\-\/\+\.]+(?:\s+[A-Za-z0-9\u03b1\u03b2\u0391\u0392\-\/\+\.]+){0,3})/i;
   function classifyContrasts(lists) {
-    lists.forEach(l => {
+    // Contrasts are curated in Gene_list_collection.csv ("First group vs Second
+    // group", Directionality refers to the first group) and shipped as
+    // l.contrast in genedex-meta.json; lists without one stay empty. The text
+    // guess below is only a fallback for metadata that has no contrast field.
+    if (lists.some(l => typeof l.contrast === "string")) {
+      lists.forEach(l => { l.contrast = (l.contrast || "").trim(); });
+    } else lists.forEach(l => {
       const hay = (l.notes || "") + " || " + (l.short || "") + " " + (l.name || "");
       const m = hay.match(CONTRAST_RE);
       let contrast = "";

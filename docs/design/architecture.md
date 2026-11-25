@@ -2,7 +2,7 @@
 
 ## Decision
 
-GeneDeX operates as a zero-backend static web application served from `web/` via GitHub Pages CDN. All gene set enrichment (hypergeometric testing + Benjamini–Hochberg FDR), facet profiling, context matrix aggregation, and pairwise Jaccard similarity calculations run directly in the user's browser via `web/genedex-data.js`.
+GeneDeX operates as a zero-backend static web application served from `web/` via GitHub Pages CDN. All gene set enrichment (hypergeometric testing + Benjamini–Hochberg FDR), facet profiling, and pairwise Jaccard similarity calculations run directly in the user's browser via `web/genedex-data.js`.
 
 ## Rationale
 
