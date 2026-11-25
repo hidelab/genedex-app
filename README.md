@@ -1,6 +1,6 @@
-# GeneDeX
+# Genedex
 
-**GeneDeX** is an interactive web portal and curated index of Alzheimer's disease (AD) gene lists, enabling researchers to query gene sets against the published AD literature across functional pathways, cellular states, and brain regions in one place.
+**Genedex** is an interactive web portal and curated index of Alzheimer's disease (AD) gene lists, enabling researchers to query gene sets against the published AD literature across functional pathways, cellular states, and brain regions in one place.
 
 - **Live Portal:** https://hidelab.github.io/genedex-app/
 - **Repository:** https://github.com/hidelab/genedex-app
@@ -9,14 +9,13 @@
 
 ## Overview
 
-GeneDeX indexes **1,574 manually curated gene lists** spanning **17,515 unique HGNC gene symbols** and **228 curated facets** across functional processes, cell types, and anatomical tissues. Each entry is extracted directly from published Alzheimer's disease studies along with study metadata (DOI, PubMed ID, assay/method, direction of change, and source table/figure).
+Genedex indexes **1,574 curated gene lists** spanning **17,515 unique HGNC gene symbols** and **228 curated facets** across functional processes, cell types, and anatomical tissues. Each entry is extracted directly from published Alzheimer's disease studies along with study metadata (DOI, PubMed ID, assay/method, direction of change, and source table/figure).
 
 ### Key Modules
 
 1. **Gene Search:** Test a query gene set against all 1,574 curated AD lists for statistical overlap using hypergeometric enrichment and Benjamini–Hochberg FDR correction.
-2. **Gene Print:** Profile a gene set across functional, cellular, and tissue facets or reference lists as an interactive heatmap.
-3. **Context Matrix:** Map query genes across cell type × brain region combinations to inspect directional agreement or conflict across independent studies.
-4. **Similarity:** Compare gene sets or pooled AD facets pairwise using the Jaccard index ($J(A,B) = |A \cap B| / |A \cup B|$) with average-linkage hierarchical clustering.
+2. **GenePrint:** Profile a gene set across functional, cellular, and tissue facets or reference lists as an interactive heatmap.
+3. **Similarity:** Compare gene sets or pooled AD facets pairwise using the Jaccard index ($J(A,B) = |A \cap B| / |A \cup B|$) with average-linkage hierarchical clustering.
 
 ---
 
